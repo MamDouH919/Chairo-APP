@@ -19,6 +19,7 @@ import { EmptyState, OfflineBanner, ToastHost } from '@/components/ui';
 import { ar } from '@/i18n/ar';
 import { queryClient } from '@/lib/query-client';
 import { useAuth } from '@/stores/auth';
+import { useMode } from '@/stores/mode';
 import { useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -46,6 +47,8 @@ export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
 export default function RootLayout() {
   const { colors, scheme } = useTheme();
   const status = useAuth((s) => s.status);
+  // Shop mode swaps the whole tab set; leaving it sends the user back through the anchor route.
+  const inShop = useMode((s) => s.ready && s.mode === 'shop' && !!s.shopId);
   const [fontsLoaded] = useFonts({
     IBMPlexSansArabic_400Regular,
     IBMPlexSansArabic_500Medium,
@@ -94,8 +97,17 @@ export default function RootLayout() {
               <Stack.Protected guard={status === 'needsProfile'}>
                 <Stack.Screen name="profile-setup" />
               </Stack.Protected>
-              <Stack.Protected guard={status === 'signedIn'}>
+              <Stack.Protected guard={status === 'signedIn' && inShop}>
+                <Stack.Screen name="(shop)" />
+              </Stack.Protected>
+              <Stack.Protected guard={status === 'signedIn' && !inShop}>
                 <Stack.Screen name="(tabs)" />
+              </Stack.Protected>
+              <Stack.Protected guard={status === 'signedIn'}>
+                <Stack.Screen name="staff/no-shop" />
+                <Stack.Screen name="staff/register-shop" />
+                <Stack.Screen name="staff/pending" />
+                <Stack.Screen name="staff/pick-shop" />
                 <Stack.Screen name="shop/[slug]" />
                 <Stack.Screen name="book/[slug]" />
                 <Stack.Screen name="book/success" options={{ gestureEnabled: false, animation: 'fade' }} />

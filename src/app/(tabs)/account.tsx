@@ -10,15 +10,18 @@ import {
   Moon,
   PencilLine,
   Phone,
+  Scissors,
   ShieldAlert,
   ShieldCheck,
   Smartphone,
+  Store,
 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Linking, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MockBadge } from '@/components/brand';
+import { switchToShopMode } from '@/components/mode-menu';
 import { Avatar, Button, Card, ListRow, Screen, Sheet, Stack, Text, TextField, toast } from '@/components/ui';
 import { useAppConfig } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
@@ -26,6 +29,7 @@ import { api, type AppConfig } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { formatPhone, whatsappUrl } from '@/lib/format';
 import { useAuth } from '@/stores/auth';
+import { useHasShops } from '@/stores/mode';
 import { space } from '@/theme';
 
 export default function Account() {
@@ -35,6 +39,7 @@ export default function Account() {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const support = useAppConfig().data?.support;
+  const hasShops = useHasShops();
   const hasSupport = !!(support?.phone || support?.whatsapp || support?.email);
 
   return (
@@ -57,6 +62,16 @@ export default function Account() {
             </View>
             <MockBadge />
           </View>
+        </Card>
+
+        <Card padded={false} style={{ overflow: 'hidden' }}>
+          <ListRow
+            icon={hasShops ? Store : Scissors}
+            title={hasShops ? ar.staff.shopMode : ar.staff.imBarber}
+            subtitle={hasShops ? ar.staff.shopModeHint : undefined}
+            onPress={() => void switchToShopMode()}
+            last
+          />
         </Card>
 
         <Card padded={false} style={{ overflow: 'hidden' }}>

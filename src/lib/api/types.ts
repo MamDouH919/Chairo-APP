@@ -248,3 +248,45 @@ export interface Session {
 export interface AppConfig {
   support: { phone: string; whatsapp: string; email: string; hours: string };
 }
+
+// ── staff (shop mode) ──────────────────────────────────────────────────────
+
+export type ShopStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
+export type ShopRole = 'OWNER' | 'BARBER';
+
+/** One row of GET /me/staff-context. The role comes from here, never from `user.role`. */
+export interface StaffMembership {
+  shopId: string;
+  shopName: string;
+  slug: string;
+  status: ShopStatus;
+  coverUrl: string | null;
+  coverThumbUrl?: string | null;
+  role: ShopRole;
+  /** the chair linked to this account at that shop (an owner may not cut hair) */
+  barberId: string | null;
+  barberName: string | null;
+}
+
+export interface StaffContext {
+  memberships: StaffMembership[];
+  pendingInvites: unknown[];
+}
+
+/** POST /shops (createShopSchema). The shop starts PENDING until an admin approves it. */
+export interface CreateShopInput {
+  name: string;
+  city: string;
+  area: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  phone?: string | null;
+}
+
+export interface CreatedShop {
+  id: string;
+  name: string;
+  slug: string;
+  status: ShopStatus;
+}

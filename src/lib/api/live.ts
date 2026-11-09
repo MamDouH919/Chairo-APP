@@ -8,12 +8,15 @@ import type {
   Booking,
   BookingDetail,
   CreateBookingInput,
+  CreatedShop,
+  CreateShopInput,
   MyRecord,
   OtpRequestResult,
   Paged,
   PolicyText,
   PublicShop,
   Session,
+  StaffContext,
   Strike,
   Tokens,
   User,
@@ -56,6 +59,12 @@ export interface ChairoApi {
     checkIn(id: string, token: string): Promise<void>;
     dispute(id: string, note: string): Promise<void>;
     reportLate(id: string, note?: string): Promise<void>;
+  };
+  staff: {
+    /** Memberships right after login: which shops, which role, which chair. */
+    context(): Promise<StaffContext>;
+    /** Self-service shop registration; the caller becomes OWNER of a PENDING shop. */
+    registerShop(input: CreateShopInput): Promise<CreatedShop>;
   };
   notifications: {
     list(page?: number): Promise<Paged<AppNotification>>;
@@ -129,6 +138,10 @@ export const liveApi: ChairoApi = {
     reportLate: async (id, note) => {
       await request(`/bookings/${id}/report-late`, { method: 'POST', body: { note } });
     },
+  },
+  staff: {
+    context: () => request('/me/staff-context'),
+    registerShop: (input) => request('/shops', { method: 'POST', body: input }),
   },
   notifications: {
     list: (page = 1) => requestPaged('/notifications', { query: { page, limit: 20 } }),

@@ -11,10 +11,11 @@ import type {
   PublicShop,
   Session,
   Slot,
+  StaffMembership,
   Strike,
   User,
 } from '../types';
-import { mockNotifications, mockPolicy, mockShops } from './data';
+import { mockNotifications, mockPolicy, mockShops, mockStaff } from './data';
 
 /**
  * In-memory backend with the same rules the real API enforces for customers
@@ -47,6 +48,8 @@ const db = {
   restrictionUntil: null as string | null,
   strikes: [] as Omit<Strike, 'canAppeal'>[],
   lateReports: new Set<string>(),
+  /** shops registered through POST /shops, per owner phone; PENDING until "admin" approval */
+  registeredShops: [] as (StaffMembership & { ownerPhone: string })[],
   sessions: [
     {
       id: 'session-current',
@@ -218,12 +221,13 @@ export const mockApi: ChairoApi = {
     async verifyOtp({ phone, code, name }) {
       await wait();
       if (!/^\d{6}$/.test(code) || code === '000000') fail('OTP_INVALID', 400, { attemptsLeft: 2 });
+      const seeded = mockStaff[phone];
       const isNewUser = !db.user || db.user.phone !== phone;
       if (isNewUser) {
         db.user = {
-          id: 'user-' + uid(),
+          id: seeded ? 'user-staff-' + phone.slice(-4) : 'user-' + uid(),
           phone,
-          name: name ?? null,
+          name: name ?? seeded?.name ?? null,
           avatarUrl: null,
           role: 'CUSTOMER',
           status: 'ACTIVE',
@@ -236,7 +240,7 @@ export const mockApi: ChairoApi = {
         refreshToken: 'mock-refresh.' + uid(),
         expiresIn: 900,
         tokenType: 'Bearer',
-        isNewUser: isNewUser || !db.user!.name,
+        isNewUser: (isNewUser && !seeded) || !db.user!.name,
         user: db.user!,
       };
     },
@@ -498,6 +502,55 @@ export const mockApi: ChairoApi = {
         fail('REPORT_NOT_ALLOWED');
       }
       db.lateReports.add(id);
+    },
+  },
+
+  staff: {
+    async context() {
+      await wait(300);
+      const me = db.user ?? fail('UNAUTHENTICATED', 401);
+      const seeded = (mockStaff[me.phone]?.memberships ?? []).map((m): StaffMembership => {
+        const shop = shopById(m.shopId);
+        return {
+          shopId: shop.id,
+          shopName: shop.name,
+          slug: shop.slug,
+          status: 'ACTIVE',
+          coverUrl: shop.coverUrl,
+          coverThumbUrl: null,
+          role: m.role,
+          barberId: m.barberId,
+          barberName: shop.barbers.find((b) => b.id === m.barberId)?.displayName ?? null,
+        };
+      });
+      const registered = db.registeredShops
+        .filter((s) => s.ownerPhone === me.phone)
+        .map(({ ownerPhone: _, ...m }) => m);
+      return { memberships: [...seeded, ...registered], pendingInvites: [] };
+    },
+    async registerShop(input) {
+      await wait();
+      const me = db.user ?? fail('UNAUTHENTICATED', 401);
+      if (input.name.trim().length < 2 || input.address.trim().length < 3) fail('VALIDATION_FAILED', 400);
+      const slug =
+        input.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') || 'shop-' + uid();
+      const shop = { id: 'shop-' + uid(), name: input.name.trim(), slug, status: 'PENDING' as const };
+      db.registeredShops.push({
+        ownerPhone: me.phone,
+        shopId: shop.id,
+        shopName: shop.name,
+        slug,
+        status: 'PENDING',
+        coverUrl: null,
+        coverThumbUrl: null,
+        role: 'OWNER',
+        barberId: null,
+        barberName: null,
+      });
+      return shop;
     },
   },
 

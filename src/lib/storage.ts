@@ -22,4 +22,6 @@ export const StorageKeys = {
   user: 'chairo.user',
   deviceId: 'chairo.deviceId',
   policyAccepted: 'chairo.policyAccepted',
+  /** last mode + shop, per user (kept across sign-out so a barber reopens in his shop) */
+  mode: (userId: string) => `chairo.mode.${userId}`,
 } as const;

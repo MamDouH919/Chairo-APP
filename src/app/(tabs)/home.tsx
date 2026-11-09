@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MockBadge } from '@/components/brand';
+import { AvatarMenuButton } from '@/components/mode-menu';
 import { BookingActionCard } from '@/components/booking-action-card';
 import { NextBookingHero } from '@/components/booking-card';
 import { RestrictionNotice } from '@/components/restriction-notice';
@@ -14,6 +15,7 @@ import { EmptyState, ErrorState, Icon, IconButton, Row, Screen, SectionHeader, S
 import { useFeaturedShops, useMyBookings, useUnreadCount } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import { useAuth } from '@/stores/auth';
+import { useHasShops } from '@/stores/mode';
 import { fonts, hitTarget, radius, space, useTheme } from '@/theme';
 
 export default function Home() {
@@ -23,6 +25,7 @@ export default function Home() {
   const shops = useFeaturedShops();
   const upcoming = useMyBookings('upcoming');
   const unread = useUnreadCount().data ?? 0;
+  const hasShops = useHasShops();
   const [q, setQ] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
 
@@ -60,6 +63,7 @@ export default function Home() {
             badge={unread > 0}
             onPress={() => router.navigate('/notifications')}
           />
+          {hasShops && <AvatarMenuButton />}
         </Row>
 
         {/* search (filters the featured list until the API has search — API Phase 6) */}

@@ -171,3 +171,23 @@ export const mockPolicy = {
     'التأجيل مجاني لحد قبل الميعاد بـ 2 ساعة. ولو الحلاق أعلن إنه متأخر، تقدر تأجل أو تلغي من غير أي عقوبة.',
   ],
 };
+
+/**
+ * Staff accounts for shop mode. Log in with these numbers (any 6-digit code) to try each landing:
+ * 0100 000 0001 owner · 0100 000 0002 / 0003 barbers · 0100 000 0009 two shops · anything else: no shop.
+ */
+export const mockStaff: Record<
+  string,
+  { name: string; memberships: { shopId: string; role: 'OWNER' | 'BARBER'; barberId: string | null }[] }
+> = {
+  '+201000000001': { name: 'الحاج سيد', memberships: [{ shopId: 'shop-demo', role: 'OWNER', barberId: null }] },
+  '+201000000002': { name: 'محمد', memberships: [{ shopId: 'shop-demo', role: 'BARBER', barberId: 'demo-b1' }] },
+  '+201000000003': { name: 'أحمد', memberships: [{ shopId: 'shop-demo', role: 'BARBER', barberId: 'demo-b2' }] },
+  '+201000000009': {
+    name: 'يوسف',
+    memberships: [
+      { shopId: 'shop-king', role: 'OWNER', barberId: 'king-b1' },
+      { shopId: 'shop-fade', role: 'BARBER', barberId: 'fade-b1' },
+    ],
+  },
+};

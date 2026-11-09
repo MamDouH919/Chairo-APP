@@ -50,6 +50,12 @@
           "cameraPermission": "Chairo بيستخدم الكاميرا عشان تمسح كود الحضور في المحل",
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Chairo بيستخدم موقعك مرة واحدة عشان يحفظ مكان محلك على الخريطة"
+        }
       ]
     ],
     "experiments": {

@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
 import { Button, Screen, ScreenHeader, Stack, Text, TextField } from '@/components/ui';
@@ -10,6 +10,7 @@ import { normalizeEgyptPhone, toE164 } from '@/lib/format';
 import { space } from '@/theme';
 
 export default function PhoneScreen() {
+  const barber = useLocalSearchParams<{ as?: string }>().as === 'barber';
   const [value, setValue] = useState('');
   const [touched, setTouched] = useState(false);
   const local = normalizeEgyptPhone(value);
@@ -38,9 +39,9 @@ export default function PhoneScreen() {
       <Stack gap={space.xxl} style={{ paddingTop: space.lg }}>
         <Stack gap={space.xs}>
           <Text variant="title" accessibilityRole="header">
-            {ar.auth.phoneTitle}
+            {barber ? ar.auth.barberPhoneTitle : ar.auth.phoneTitle}
           </Text>
-          <Text tone="textMuted">{ar.auth.phoneSubtitle}</Text>
+          <Text tone="textMuted">{barber ? ar.auth.barberPhoneSubtitle : ar.auth.phoneSubtitle}</Text>
         </Stack>
         <TextField
           label={ar.auth.phoneLabel}
