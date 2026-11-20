@@ -1,10 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Bell, CalendarDays, House, UserRound, type LucideIcon } from 'lucide-react-native';
-import { Platform, type ColorValue } from 'react-native';
+import { type ColorValue } from 'react-native';
 
+import { FloatingTabBar } from '@/components/floating-tab-bar';
 import { useUnreadCount } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
-import { fonts, iconStroke, useTheme } from '@/theme';
+import { iconStroke, motion, useTheme } from '@/theme';
 
 const tabIcon = (Glyph: LucideIcon) =>
   function TabIcon({ color, focused }: { color: ColorValue; focused: boolean }) {
@@ -12,24 +13,18 @@ const tabIcon = (Glyph: LucideIcon) =>
   };
 
 export default function TabsLayout() {
-  const { colors } = useTheme();
   const unread = useUnreadCount().data ?? 0;
+  const { colors } = useTheme();
 
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSubtle,
-        tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 12, marginTop: 2 },
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 88 : 68,
-          paddingTop: 8,
-        },
-        tabBarItemStyle: { minHeight: 48 },
-        tabBarBadgeStyle: { backgroundColor: colors.danger, fontFamily: fonts.semibold, fontSize: 11 },
+        // Tabs are peers, not a hierarchy: a quick cross-fade (direction-neutral, so RTL-safe) instead of a slide.
+        animation: 'fade',
+        transitionSpec: { animation: 'timing', config: { duration: motion.fast } },
+        sceneStyle: { backgroundColor: colors.background },
       }}>
       <Tabs.Screen name="home" options={{ title: ar.tabs.home, tabBarIcon: tabIcon(House) }} />
       <Tabs.Screen name="bookings" options={{ title: ar.tabs.bookings, tabBarIcon: tabIcon(CalendarDays) }} />

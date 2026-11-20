@@ -1,9 +1,10 @@
 import { onlineManager } from '@tanstack/react-query';
 import { CircleAlert, CircleCheck, WifiOff, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useSyncExternalStore } from 'react';
-import { StyleSheet, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
+import { type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   FadeInUp,
+  ZoomIn,
   FadeOutUp,
   useAnimatedStyle,
   useReducedMotion,
@@ -12,15 +13,21 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { withUniwind } from 'uniwind';
 import { create } from 'zustand';
+
+import { Box } from '@/components/gluestack/box';
 
 import { ar } from '@/i18n/ar';
 import { errorCode, errorMessage } from '@/lib/errors';
-import { elevation, radius, space, useTheme } from '@/theme';
+import { elevation, motion, radius, space, useTheme } from '@/theme';
 
 import { Button } from './button';
 import { Icon } from './icon';
+import { Reveal } from './motion';
 import { Text } from './text';
+
+const AView = withUniwind(Animated.View);
 
 /** Pulsing placeholder that reserves the exact space of the content (no layout shift). */
 export function Skeleton({
@@ -34,16 +41,14 @@ export function Skeleton({
   radius?: number;
   style?: StyleProp<ViewStyle>;
 }) {
-  const { colors } = useTheme();
   const reduce = useReducedMotion();
   const o = useSharedValue(1);
   useEffect(() => {
     if (!reduce) o.value = withRepeat(withTiming(0.45, { duration: 800 }), -1, true);
   }, [reduce, o]);
   const anim = useAnimatedStyle(() => ({ opacity: o.value }));
-  return (
-    <Animated.View style={[{ width, height, borderRadius: r, backgroundColor: colors.surfaceMuted }, anim, style]} />
-  );
+  // dynamic dimensions come from callers, so they stay as style; the fill is a token class
+  return <AView className="bg-muted" style={[{ width, height, borderRadius: r }, anim, style]} />;
 }
 
 export function EmptyState({
@@ -57,26 +62,29 @@ export function EmptyState({
   hint?: string;
   action?: { label: string; onPress: () => void };
 }) {
-  const { colors } = useTheme();
   return (
-    <View style={styles.empty}>
-      <View style={[styles.emptyIcon, { backgroundColor: colors.primarySoft }]}>
+    <Box className="items-center gap-2 px-5 py-12">
+      <AView
+        entering={ZoomIn.duration(motion.base)}
+        className="mb-2 h-18 w-18 items-center justify-center rounded-full bg-secondary">
         <Icon icon={icon} size="xl" tone="primary" />
-      </View>
-      <Text variant="heading" align="center">
-        {title}
-      </Text>
-      {hint && (
-        <Text variant="body" tone="textMuted" align="center">
-          {hint}
+      </AView>
+      <Reveal delay={80} style={{ alignSelf: 'stretch', alignItems: 'center', gap: space.sm }}>
+        <Text variant="heading" align="center">
+          {title}
         </Text>
-      )}
-      {action && (
-        <View style={{ marginTop: space.sm, alignSelf: 'stretch', alignItems: 'center' }}>
-          <Button label={action.label} onPress={action.onPress} variant="secondary" fullWidth={false} />
-        </View>
-      )}
-    </View>
+        {hint && (
+          <Text variant="body" tone="textMuted" align="center">
+            {hint}
+          </Text>
+        )}
+        {action && (
+          <Box className="mt-2 items-center self-stretch">
+            <Button label={action.label} onPress={action.onPress} variant="secondary" fullWidth={false} />
+          </Box>
+        )}
+      </Reveal>
+    </Box>
   );
 }
 
@@ -123,16 +131,17 @@ export function OfflineBanner() {
   );
   if (online) return null;
   return (
-    <Animated.View
+    <AView
       entering={FadeInUp.duration(220)}
       exiting={FadeOutUp.duration(160)}
       accessibilityLiveRegion="polite"
       accessibilityRole="alert"
       pointerEvents="none"
-      style={[styles.banner, elevation(colors, 2), { top: insets.top + space.xs, backgroundColor: colors.warningSoft }]}>
+      className="absolute z-90 flex-row items-center gap-2 self-center rounded-full bg-warning-soft px-4 py-2"
+      style={[elevation(colors, 2), { top: insets.top + space.xs }]}>
       <Icon icon={WifiOff} size="md" tone="warning" />
       <Text variant="caption">{ar.common.offline}</Text>
-    </Animated.View>
+    </AView>
   );
 }
 
@@ -159,53 +168,18 @@ export function ToastHost() {
   if (!current) return null;
   const isError = current.tone === 'error';
   return (
-    <Animated.View
+    <AView
       key={current.id}
       entering={FadeInUp.duration(220)}
       exiting={FadeOutUp.duration(160)}
       accessibilityLiveRegion="polite"
       accessibilityRole="alert"
-      style={[styles.toast, elevation(colors, 2), { top: insets.top + space.sm, backgroundColor: colors.surfaceInk }]}>
+      className="absolute inset-x-4 z-100 max-w-140 flex-row items-center gap-3 self-center rounded-lg bg-ink p-4"
+      style={[elevation(colors, 2), { top: insets.top + space.sm }]}>
       <Icon icon={isError ? CircleAlert : CircleCheck} tone={isError ? 'danger' : 'success'} />
-      <Text variant="label" tone="onInk" style={{ flex: 1 }}>
+      <Text variant="label" tone="onInk" className="flex-1">
         {current.message}
       </Text>
-    </Animated.View>
+    </AView>
   );
 }
-
-const styles = StyleSheet.create({
-  empty: { alignItems: 'center', gap: space.sm, paddingVertical: space.huge, paddingHorizontal: space.xl },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: space.sm,
-  },
-  banner: {
-    position: 'absolute',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.lg,
-    borderRadius: radius.pill,
-    zIndex: 90,
-    alignSelf: 'center',
-  },
-  toast: {
-    position: 'absolute',
-    start: space.lg,
-    end: space.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    padding: space.lg,
-    borderRadius: radius.lg,
-    zIndex: 100,
-    maxWidth: 560,
-    alignSelf: 'center',
-  },
-});

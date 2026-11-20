@@ -3,8 +3,6 @@ import * as Crypto from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ShieldCheck } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { BarberStep, DayStrip, ServiceStep, SlotGrid, Stepper, SummaryLine } from '@/components/booking-steps';
 import { RestrictionNotice } from '@/components/restriction-notice';
@@ -16,6 +14,7 @@ import {
   Icon,
   Row,
   Screen,
+  Reveal,
   ScreenHeader,
   Skeleton,
   Stack,
@@ -31,7 +30,8 @@ import { firstOpenDay } from '@/lib/hours';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { formatDuration, formatPrice, formatRelativeDay, formatTime } from '@/lib/format';
 import { useAuth } from '@/stores/auth';
-import { space } from '@/theme';
+import { Box } from '@/components/gluestack/box';
+import { Pressable } from '@/components/gluestack/pressable';
 
 export default function BookFlow() {
   const params = useLocalSearchParams<{ slug: string; serviceId?: string; barberId?: string }>();
@@ -125,18 +125,18 @@ export default function BookFlow() {
   const canNext = [!!serviceId, !!barberId, !!slot, true][step];
   const footer =
     step < 3 ? (
-      <Row gap={space.md}>
+      <Row className="gap-3">
         {step === 2 && slot && (
-          <View style={{ flex: 1 }}>
+          <Box className="flex-1">
             <Text variant="caption" tone="textSubtle">
               {formatRelativeDay(slot.startsAt, shop.timezone)}
             </Text>
             <Text variant="bodyStrong">{formatTime(slot.startsAt, shop.timezone)}</Text>
-          </View>
+          </Box>
         )}
-        <View style={{ flex: step === 2 && slot ? 1.4 : 1 }}>
+        <Box style={{ flex: step === 2 && slot ? 1.4 : 1 }}>
           <Button label={ar.common.continue} disabled={!canNext} onPress={goNext} />
-        </View>
+        </Box>
       </Row>
     ) : (
       <Button
@@ -150,13 +150,13 @@ export default function BookFlow() {
     <Screen
       keyboard={step === 3}
       header={
-        <View>
+        <Box>
           <ScreenHeader title={shop.name} onBack={goBack} />
           <Stepper step={step} />
-        </View>
+        </Box>
       }
       footer={footer}>
-      <Animated.View key={step} entering={FadeIn.duration(220)} style={{ paddingTop: space.md, gap: space.lg }}>
+      <Reveal key={step} className="gap-4 pt-3">
         <RestrictionNotice />
         {step === 0 && (
           <ServiceStep
@@ -181,7 +181,7 @@ export default function BookFlow() {
           />
         )}
         {step === 2 && (
-          <Stack gap={space.xl}>
+          <Stack className="gap-5">
             <Text variant="title" accessibilityRole="header">
               {ar.book.chooseTime}
             </Text>
@@ -198,7 +198,7 @@ export default function BookFlow() {
           </Stack>
         )}
         {step === 3 && slot && service && (
-          <Stack gap={space.xl}>
+          <Stack className="gap-5">
             <Text variant="title" accessibilityRole="header">
               {ar.book.review}
             </Text>
@@ -228,9 +228,9 @@ export default function BookFlow() {
             />
 
             <Card tone="muted">
-              <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
+              <Row className="gap-3 items-start">
                 <Icon icon={ShieldCheck} tone="primary" />
-                <View style={{ flex: 1, gap: space.xs }}>
+                <Box className="flex-1 gap-1">
                   <Text variant="bodyStrong">{ar.book.policyTitle}</Text>
                   <Text variant="caption" tone="textMuted">
                     {ar.book.policySummary}
@@ -239,17 +239,17 @@ export default function BookFlow() {
                     accessibilityRole="link"
                     onPress={() => router.push('/policy')}
                     hitSlop={8}
-                    style={{ alignSelf: 'flex-start', minHeight: 32, justifyContent: 'center' }}>
+                    className="min-h-8 justify-center self-start">
                     <Text variant="label" tone="primary">
                       {ar.book.policyLink}
                     </Text>
                   </Pressable>
-                </View>
+                </Box>
               </Row>
             </Card>
           </Stack>
         )}
-      </Animated.View>
+      </Reveal>
     </Screen>
   );
 }

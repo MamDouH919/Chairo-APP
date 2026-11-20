@@ -1,39 +1,48 @@
 import { CalendarX2, Check, Users } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { withUniwind } from 'uniwind';
+
+import { Box } from '@/components/gluestack/box';
+import { Pressable } from '@/components/gluestack/pressable';
 
 import { ar } from '@/i18n/ar';
 import type { Availability, PublicBarber, PublicShop, Slot } from '@/lib/api';
 import { addDays, localDate, weekdayOf } from '@/lib/dates';
 import { formatDayMonth, formatDuration, formatPrice, formatRating, formatTime, formatWeekday } from '@/lib/format';
-import { hitTarget, radius, space, useTheme } from '@/theme';
+import { hitTarget, radius } from '@/theme';
 
 import { Avatar, Chip, EmptyState, ErrorState, Icon, Row, Skeleton, Stack, Text } from './ui';
+
+const AView = withUniwind(Animated.View);
 
 // ── stepper ──────────────────────────────────────────────────────────────
 
 export function Stepper({ step }: { step: number }) {
-  const { colors } = useTheme();
+  const total = ar.book.steps.length;
   return (
-    <View
-      style={styles.stepper}
+    <Box
+      className="w-full max-w-170 gap-2 self-center px-5 pb-3"
       accessibilityRole="progressbar"
-      accessibilityValue={{
-        min: 1,
-        max: ar.book.steps.length,
-        now: step + 1,
-        text: `${ar.book.steps[step]} (${step + 1}/${ar.book.steps.length})`,
-      }}>
-      {ar.book.steps.map((label, i) => (
-        <View key={label} style={{ flex: 1, gap: space.xs }}>
-          <View style={[styles.stepBar, { backgroundColor: i <= step ? colors.primary : colors.border }]} />
-          <Text variant="overline" tone={i === step ? 'primary' : i < step ? 'text' : 'textSubtle'}>
-            {label}
-          </Text>
-        </View>
-      ))}
-    </View>
+      accessibilityValue={{ min: 1, max: total, now: step + 1, text: `${ar.book.steps[step]} (${step + 1}/${total})` }}>
+      <Box className="flex-row gap-1.5">
+        {ar.book.steps.map((label, i) => (
+          <Box
+            key={label}
+            className={`h-1.5 flex-1 rounded-full ${i <= step ? 'bg-primary' : 'bg-border'} ${i < step ? 'opacity-50' : ''}`}
+          />
+        ))}
+      </Box>
+      <Row className="justify-between">
+        <Text variant="overline" tone="textSubtle">
+          {ar.book.stepOf(step + 1, total)}
+        </Text>
+        <Text variant="overline" tone="primary">
+          {ar.book.steps[step]}
+        </Text>
+      </Row>
+    </Box>
   );
 }
 
@@ -56,7 +65,6 @@ function OptionRow({
   leading?: React.ReactNode;
   disabled?: boolean;
 }) {
-  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="radio"
@@ -64,39 +72,31 @@ function OptionRow({
       accessibilityLabel={[title, subtitle, trailing].filter(Boolean).join('، ')}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.option,
-        {
-          backgroundColor: selected ? colors.primarySoft : pressed ? colors.surfaceMuted : colors.surface,
-          borderColor: selected ? colors.primary : colors.border,
-          borderWidth: selected ? 2 : 1,
-          opacity: disabled ? 0.5 : 1,
-        },
-      ]}>
+      className={`min-h-17 flex-row items-center gap-3 rounded-xl p-4 ${
+        selected
+          ? 'border-2 border-primary bg-secondary'
+          : 'border border-foreground/10 bg-card data-[active=true]:bg-glass-pressed'
+      } ${disabled ? 'opacity-50' : ''}`}>
       {leading}
-      <View style={{ flex: 1 }}>
+      <Box className="flex-1">
         <Text variant="bodyStrong">{title}</Text>
         {subtitle ? (
           <Text variant="caption" tone="textSubtle" numberOfLines={2}>
             {subtitle}
           </Text>
         ) : null}
-      </View>
+      </Box>
       {trailing && (
         <Text variant="bodyStrong" tone="primary">
           {trailing}
         </Text>
       )}
-      <View
-        style={[
-          styles.radio,
-          {
-            borderColor: selected ? colors.primary : colors.borderStrong,
-            backgroundColor: selected ? colors.primary : 'transparent',
-          },
-        ]}>
+      <Box
+        className={`h-5.5 w-5.5 items-center justify-center rounded-full border-2 ${
+          selected ? 'border-primary bg-primary' : 'border-border-strong'
+        }`}>
         {selected && <Icon icon={Check} size={14} tone="onPrimary" strokeWidth={3} />}
-      </View>
+      </Box>
     </Pressable>
   );
 }
@@ -119,8 +119,8 @@ export function ServiceStep({
     ? barber.services.map((o) => ({ id: o.serviceId, name: o.name, durationMin: o.durationMin, priceEgp: o.priceEgp }))
     : shop.services;
   return (
-    <Stack gap={space.sm}>
-      <Text variant="title" accessibilityRole="header" style={{ marginBottom: space.sm }}>
+    <Stack className="gap-2">
+      <Text variant="title" accessibilityRole="header" className="mb-2">
         {ar.book.chooseService}
       </Text>
       {items.map((s) => (
@@ -150,11 +150,10 @@ export function BarberStep({
   value?: string;
   onChange: (id: string) => void;
 }) {
-  const { colors } = useTheme();
   const team = shop.barbers.filter((b) => b.services.some((o) => o.serviceId === serviceId));
   return (
-    <Stack gap={space.sm}>
-      <Text variant="title" accessibilityRole="header" style={{ marginBottom: space.sm }}>
+    <Stack className="gap-2">
+      <Text variant="title" accessibilityRole="header" className="mb-2">
         {ar.book.chooseBarber}
       </Text>
       <OptionRow
@@ -163,9 +162,9 @@ export function BarberStep({
         title={ar.book.anyBarber}
         subtitle={ar.book.anyBarberHint}
         leading={
-          <View style={[styles.anyIcon, { backgroundColor: colors.primarySoft }]}>
+          <Box className="h-11 w-11 items-center justify-center rounded-full bg-secondary">
             <Icon icon={Users} tone="primary" />
-          </View>
+          </Box>
         }
       />
       {team.map((b) => {
@@ -208,19 +207,16 @@ export function DayStrip({
   }, [shop.timezone, shop.maxAdvanceDays, sameDayOnly]);
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: space.sm, paddingVertical: space.xs }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 py-1">
       {days.map((d, i) => {
         const noon = `${d}T10:00:00.000Z`; // safe instant inside that local day
         const closed = shop.hours.find((h) => h.weekday === weekdayOf(d))?.isClosed ?? false;
         const label = i === 0 ? ar.common.today : i === 1 ? ar.common.tomorrow : formatWeekday(noon, shop.timezone);
         return (
-          <Chip
+          <DayTile
             key={d}
             label={label}
-            sublabel={closed ? ar.shop.closed : formatDayMonth(noon, shop.timezone)}
+            day={closed ? ar.shop.closed : formatDayMonth(noon, shop.timezone)}
             selected={value === d}
             disabled={closed}
             onPress={() => onChange(d)}
@@ -228,6 +224,47 @@ export function DayStrip({
         );
       })}
     </ScrollView>
+  );
+}
+
+/** Tall rounded tile: weekday on top, the date as the big number. Selected = solid ink. */
+function DayTile({
+  label,
+  day,
+  selected,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  day: string;
+  selected: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected, disabled }}
+      accessibilityLabel={`${label}، ${day}`}
+      disabled={disabled}
+      onPress={onPress}
+      className={`min-h-19 min-w-18 items-center justify-center gap-0.5 rounded-xl border px-3 ${
+        selected
+          ? 'border-foreground bg-foreground'
+          : 'border-foreground/10 bg-card data-[active=true]:bg-glass-pressed'
+      } ${disabled ? 'opacity-40' : ''}`}>
+      <Text
+        variant="overline"
+        tone={selected ? 'inverse' : 'textSubtle'}
+        align="center"
+        numberOfLines={1}
+        className={selected ? 'opacity-75' : ''}>
+        {label}
+      </Text>
+      <Text variant="bodyStrong" tone={selected ? 'inverse' : 'text'} align="center" numberOfLines={1}>
+        {day}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -261,11 +298,11 @@ export function SlotGrid({
 }) {
   if (query.isPending) {
     return (
-      <View style={styles.grid}>
+      <Box className="flex-row flex-wrap justify-start gap-2">
         {Array.from({ length: 12 }, (_, i) => (
           <Skeleton key={i} width="31%" height={hitTarget} radius={radius.md} />
         ))}
-      </View>
+      </Box>
     );
   }
   if (query.isError) return <ErrorState error={query.error} onRetry={query.refetch} />;
@@ -281,62 +318,39 @@ export function SlotGrid({
   })).filter((g) => g.slots.length);
 
   return (
-    <Animated.View entering={FadeIn.duration(200)} style={{ gap: space.xl, opacity: query.isFetching ? 0.6 : 1 }}>
+    <AView entering={FadeIn.duration(200)} className={`gap-5 ${query.isFetching ? 'opacity-60' : ''}`}>
       {groups.map((g) => (
-        <View key={g.key} style={{ gap: space.sm }}>
+        <Box key={g.key} className="gap-2">
           <Text variant="label" tone="textMuted">
             {ar.book.periods[g.key]}
           </Text>
-          <View style={styles.grid}>
+          <Box className="flex-row flex-wrap justify-start gap-2">
             {g.slots.map((s) => (
-              <View key={s.startsAt} style={{ width: '31%' }}>
+              // three per row: a percentage width can't be a static class
+              <Box key={s.startsAt} style={{ width: '31%' }}>
                 <Chip label={formatTime(s.startsAt, tz)} selected={value === s.startsAt} onPress={() => onChange(s)} />
-              </View>
+              </Box>
             ))}
-          </View>
-        </View>
+          </Box>
+        </Box>
       ))}
-    </Animated.View>
+    </AView>
   );
 }
 
 export function SummaryLine({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <Row style={{ justifyContent: 'space-between', paddingVertical: space.xs }}>
+    <Row className="justify-between py-1">
       <Text variant={strong ? 'bodyStrong' : 'body'} tone={strong ? 'text' : 'textMuted'}>
         {label}
       </Text>
       <Text
         variant={strong ? 'heading' : 'bodyStrong'}
         tone={strong ? 'primary' : 'text'}
-        style={{ flexShrink: 1 }}
+        className="shrink"
         numberOfLines={2}>
         {value}
       </Text>
     </Row>
   );
 }
-
-const styles = StyleSheet.create({
-  stepper: {
-    flexDirection: 'row',
-    gap: space.sm,
-    paddingHorizontal: space.xl,
-    paddingBottom: space.md,
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-  },
-  stepBar: { height: 4, borderRadius: 2 },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    minHeight: 68,
-    padding: space.lg,
-    borderRadius: radius.lg,
-  },
-  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  anyIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'flex-start' },
-});

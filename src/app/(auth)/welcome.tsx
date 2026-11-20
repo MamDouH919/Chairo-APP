@@ -1,16 +1,25 @@
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { BellRing, CalendarClock, Scissors, UserRound, UserRoundCheck, type LucideIcon } from 'lucide-react-native';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import {
+  BellRing,
+  CalendarClock,
+  Check,
+  Scissors,
+  UserRound,
+  UserRoundCheck,
+  type LucideIcon,
+} from 'lucide-react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { withUniwind } from 'uniwind';
 
-import { BrandMark, MockBadge } from '@/components/brand';
-import { ChevronForward, Icon, Row, Text } from '@/components/ui';
-import { MAX_WIDTH } from '@/components/ui/layout';
+import { BrandMark } from '@/components/brand';
+import { Box } from '@/components/gluestack/box';
+import { Avatar, ChevronForward, Icon, PressableScale, Reveal, Row, Text } from '@/components/ui';
 import { ar } from '@/i18n/ar';
 import { useMode } from '@/stores/mode';
-import { radius, space, useTheme } from '@/theme';
+
+const AView = withUniwind(Animated.View);
 
 const FEATURE_ICONS = [UserRoundCheck, CalendarClock, BellRing];
 
@@ -33,29 +42,28 @@ function Entry({
   primary?: boolean;
   onPress: () => void;
 }) {
-  const { colors } = useTheme();
   return (
-    <Pressable
+    <PressableScale
+      scaleTo={0.97}
+      dim={0.92}
       accessibilityRole="button"
       accessibilityLabel={`${label}، ${hint}`}
       onPress={() => {
         if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress();
       }}
-      style={({ pressed }) => [
-        styles.entry,
+      className={`min-h-18 flex-row items-center gap-3 rounded-full border px-4 py-3 ${
         primary
-          ? { backgroundColor: pressed ? colors.primaryPressed : colors.primary, borderColor: colors.primary }
-          : {
-              backgroundColor: pressed ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)',
-              borderColor: 'rgba(255,255,255,0.22)',
-            },
-      ]}>
-      <View
-        style={[styles.entryIcon, { backgroundColor: primary ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.10)' }]}>
+          ? 'border-primary bg-primary shadow-xl shadow-primary/40'
+          : 'border-ink-foreground/20 bg-ink-foreground/6'
+      }`}>
+      <Box
+        className={`h-11.5 w-11.5 items-center justify-center rounded-full ${
+          primary ? 'bg-ink-foreground/16' : 'bg-ink-foreground/10'
+        }`}>
         <Icon icon={icon} size="lg" tone={primary ? 'onPrimary' : 'onInk'} />
-      </View>
-      <View style={{ flex: 1 }}>
+      </Box>
+      <Box className="flex-1">
         <Text variant="bodyStrong" tone={primary ? 'onPrimary' : 'onInk'} numberOfLines={1}>
           {label}
         </Text>
@@ -63,113 +71,131 @@ function Entry({
           variant="caption"
           tone={primary ? 'onPrimary' : 'onInkMuted'}
           numberOfLines={1}
-          style={{ opacity: primary ? 0.85 : 1 }}>
+          className={primary ? 'opacity-85' : ''}>
           {hint}
         </Text>
-      </View>
+      </Box>
       <Icon icon={ChevronForward} size="md" tone={primary ? 'onPrimary' : 'onInkMuted'} />
-    </Pressable>
+    </PressableScale>
+  );
+}
+
+const GLASS_INK = 'border border-ink-foreground/14 bg-ink-foreground/7';
+
+/** Decorative glass "ticket": shows what a booking looks like before the user has one. */
+function TicketPreview() {
+  const p = ar.welcome.preview;
+  return (
+    <Box accessibilityElementsHidden importantForAccessibility="no-hide-descendants" className="h-53.5 justify-center">
+      <Box className={`absolute bottom-3.5 end-3.5 start-8.5 top-6.5 -rotate-5 rounded-2xl opacity-60 ${GLASS_INK}`} />
+      <Box className={`ms-5.5 gap-3 rounded-2xl p-5 ${GLASS_INK}`}>
+        <Row className="justify-between">
+          <Row className="h-7.5 gap-1 rounded-full bg-primary-bright/15 px-3">
+            <Icon icon={Check} size={14} tone="primaryBright" />
+            <Text variant="caption" tone="primaryBright">
+              {p.status}
+            </Text>
+          </Row>
+          <Text variant="caption" tone="onInkMuted">
+            {p.day}
+          </Text>
+        </Row>
+        <Row className="gap-3">
+          <Avatar name="محمد" size={46} />
+          <Box className="flex-1">
+            <Text variant="bodyStrong" tone="onInk" numberOfLines={1}>
+              {p.title}
+            </Text>
+            <Text variant="caption" tone="onInkMuted" numberOfLines={1}>
+              {p.place}
+            </Text>
+          </Box>
+        </Row>
+        <Row className="justify-between border-t border-dashed border-ink-foreground/18 pt-3">
+          <Text variant="display" tone="onInk">
+            {p.time}
+          </Text>
+          <Box className="h-7.5 items-center justify-center rounded-full bg-ink-foreground px-3">
+            <Text variant="label" tone="ink">
+              {p.countdown}
+            </Text>
+          </Box>
+        </Row>
+      </Box>
+    </Box>
   );
 }
 
 export default function Welcome() {
-  const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  // The preview is decoration: drop it on short phones so the two entries never get pushed off-screen.
+  const showPreview = useWindowDimensions().height >= 760;
 
   return (
-    <View
-      style={[
-        styles.root,
-        {
-          backgroundColor: colors.surfaceInk,
-          paddingTop: insets.top + space.lg,
-          paddingBottom: insets.bottom + space.lg,
-        },
-      ]}>
-      {/* soft brand glow, decorative */}
-      <View pointerEvents="none" style={[styles.glow, { backgroundColor: colors.primary }]} />
-      <View pointerEvents="none" style={[styles.glow2, { backgroundColor: colors.accent }]} />
-
-      <View style={styles.inner}>
-        <Row style={{ justifyContent: 'space-between' }}>
+    <Box className="flex-1 overflow-hidden bg-ink px-5 pb-safe-offset-4 pt-safe-offset-4">
+      <Box className="w-full max-w-160 flex-1 self-center">
+        <Row className="justify-between">
           <BrandMark onInk />
-          <MockBadge />
         </Row>
 
-        <View style={{ flex: 1, justifyContent: 'center', gap: space.xxl }}>
-          <Animated.View entering={FadeInDown.duration(420)}>
-            <Text variant="display" tone="onInk" style={{ fontSize: 36, lineHeight: 52 }}>
+        <Box className="flex-1 justify-center gap-6">
+          {showPreview && (
+            <AView entering={FadeInDown.duration(480)}>
+              <TicketPreview />
+            </AView>
+          )}
+          <AView entering={FadeInDown.duration(420)}>
+            <Text variant="jumbo" tone="onInk">
               {ar.welcome.title}
             </Text>
-          </Animated.View>
-          <Animated.View entering={FadeInDown.duration(420).delay(80)}>
+          </AView>
+          <AView entering={FadeInDown.duration(420).delay(80)}>
             <Text variant="body" tone="onInkMuted">
               {ar.welcome.subtitle}
             </Text>
-          </Animated.View>
+          </AView>
 
-          <View style={{ gap: space.md }}>
-            {ar.welcome.features.map((f, i) => (
-              <Animated.View key={f} entering={FadeInDown.duration(380).delay(160 + i * 70)}>
-                <Row gap={space.md}>
-                  <View style={styles.featureIcon}>
-                    <Icon icon={FEATURE_ICONS[i]} size="md" tone="onInk" />
-                  </View>
-                  <Text variant="bodyStrong" tone="onInk">
-                    {f}
-                  </Text>
-                </Row>
-              </Animated.View>
-            ))}
-          </View>
-        </View>
+          {!showPreview && (
+            <Box className="gap-3">
+              {ar.welcome.features.map((f, i) => (
+                <AView key={f} entering={FadeInDown.duration(380).delay(160 + i * 70)}>
+                  <Row className="gap-3">
+                    <Box className="h-11 w-11 items-center justify-center rounded-md bg-ink-foreground/10">
+                      <Icon icon={FEATURE_ICONS[i]} size="md" tone="onInk" />
+                    </Box>
+                    <Text variant="bodyStrong" tone="onInk">
+                      {f}
+                    </Text>
+                  </Row>
+                </AView>
+              ))}
+            </Box>
+          )}
+        </Box>
 
-        <View style={{ gap: space.md }}>
+        <Box className="gap-3">
           {/* Same phone OTP for both; the choice only sets the starting mode and the copy. */}
-          <Entry
-            icon={UserRound}
-            label={ar.welcome.customerCta}
-            hint={ar.welcome.customerHint}
-            primary
-            onPress={() => start('customer')}
-          />
-          <Entry
-            icon={Scissors}
-            label={ar.welcome.barberCta}
-            hint={ar.welcome.barberHint}
-            onPress={() => start('barber')}
-          />
+          <Reveal delay={220}>
+            <Entry
+              icon={UserRound}
+              label={ar.welcome.customerCta}
+              hint={ar.welcome.customerHint}
+              primary
+              onPress={() => start('customer')}
+            />
+          </Reveal>
+          <Reveal delay={290}>
+            <Entry
+              icon={Scissors}
+              label={ar.welcome.barberCta}
+              hint={ar.welcome.barberHint}
+              onPress={() => start('barber')}
+            />
+          </Reveal>
           <Text variant="caption" tone="onInkMuted" align="center">
             {ar.welcome.terms}
           </Text>
-        </View>
-      </View>
-    </View>
+        </Box>
+      </Box>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, overflow: 'hidden', paddingHorizontal: space.xl },
-  inner: { flex: 1, width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center' },
-  glow: { position: 'absolute', width: 420, height: 420, borderRadius: 210, top: -180, end: -160, opacity: 0.35 },
-  glow2: { position: 'absolute', width: 260, height: 260, borderRadius: 130, bottom: 120, start: -170, opacity: 0.16 },
-  entry: {
-    minHeight: 72,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-  },
-  entryIcon: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  featureIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

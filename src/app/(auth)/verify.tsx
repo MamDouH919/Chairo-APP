@@ -1,7 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
 
 import { Badge, Button, OtpInput, Screen, ScreenHeader, Stack, Text } from '@/components/ui';
 import { ar } from '@/i18n/ar';
@@ -9,7 +8,8 @@ import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { formatPhone } from '@/lib/format';
 import { getDeviceId, useAuth } from '@/stores/auth';
-import { space } from '@/theme';
+import { Pressable } from '@/components/gluestack/pressable';
+import { Box } from '@/components/gluestack/box';
 
 export default function VerifyScreen() {
   const params = useLocalSearchParams<{ phone: string; resendIn?: string; devCode?: string }>();
@@ -60,8 +60,8 @@ export default function VerifyScreen() {
           disabled={code.length !== 6}
         />
       }>
-      <Stack gap={space.xxl} style={{ paddingTop: space.lg }}>
-        <Stack gap={space.xs}>
+      <Stack className="gap-6 pt-4">
+        <Stack className="gap-1">
           <Text variant="title" accessibilityRole="header">
             {ar.auth.otpTitle}
           </Text>
@@ -70,14 +70,14 @@ export default function VerifyScreen() {
             accessibilityRole="button"
             onPress={() => router.back()}
             hitSlop={10}
-            style={{ alignSelf: 'flex-start', minHeight: 32, justifyContent: 'center' }}>
+            className="min-h-8 justify-center self-start">
             <Text variant="label" tone="primary">
               {ar.auth.changeNumber}
             </Text>
           </Pressable>
         </Stack>
 
-        <Stack gap={space.md}>
+        <Stack className="gap-3">
           <OtpInput label={ar.auth.otpLabel} value={code} onChange={onChange} error={!!verify.error} autoFocus />
           {error && (
             <Text
@@ -90,13 +90,13 @@ export default function VerifyScreen() {
             </Text>
           )}
           {devCode ? (
-            <View style={{ alignItems: 'center' }}>
+            <Box className="items-center">
               <Badge label={ar.auth.devCode(devCode)} tone="info" />
-            </View>
+            </Box>
           ) : null}
         </Stack>
 
-        <View style={{ alignItems: 'center' }}>
+        <Box className="items-center">
           {cooldown > 0 ? (
             <Text variant="label" tone="textSubtle">
               {ar.auth.resendIn(cooldown)}
@@ -111,7 +111,7 @@ export default function VerifyScreen() {
               loading={resend.isPending}
             />
           )}
-        </View>
+        </Box>
       </Stack>
     </Screen>
   );

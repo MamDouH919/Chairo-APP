@@ -3,15 +3,16 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { Crosshair, MapPin, MapPinCheck } from 'lucide-react-native';
 import { useState } from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { Linking } from 'react-native';
 
+import { Pressable } from '@/components/gluestack/pressable';
 import { Button, Card, Icon, Row, Screen, ScreenHeader, Stack, Text, TextField } from '@/components/ui';
 import { ar } from '@/i18n/ar';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { ltr, normalizeEgyptPhone, toE164 } from '@/lib/format';
 import { useMode } from '@/stores/mode';
-import { radius, space, useTheme } from '@/theme';
+import { Box } from '@/components/gluestack/box';
 
 type Pin = { latitude: number; longitude: number };
 /** Same bounds as the API's createShopSchema, so an obviously wrong pin never reaches it. */
@@ -85,7 +86,7 @@ export default function RegisterShop() {
       keyboard
       header={<ScreenHeader title={ar.staff.registerTitle} />}
       footer={
-        <Stack gap={space.sm}>
+        <Stack className="gap-2">
           {submit.error && (
             <Text variant="caption" tone="danger" align="center" accessibilityRole="alert">
               {errorMessage(submit.error)}
@@ -94,7 +95,7 @@ export default function RegisterShop() {
           <Button label={ar.staff.submitShop} onPress={onSubmit} loading={submit.isPending} />
         </Stack>
       }>
-      <Stack gap={space.xl} style={{ paddingTop: space.sm }}>
+      <Stack className="gap-5 pt-2">
         <Text tone="textMuted">{ar.staff.registerHint}</Text>
         <TextField
           label={ar.staff.shopName}
@@ -164,32 +165,23 @@ function PinCard({
   showSettings: boolean;
   onLocate: () => void;
 }) {
-  const { colors } = useTheme();
   return (
-    <Stack gap={space.xs + 2}>
+    <Stack className="gap-1.5">
       <Text variant="label" tone="textMuted">
         {ar.staff.pin}
       </Text>
-      <Card style={{ gap: space.md, borderColor: error ? colors.danger : colors.border }}>
+      <Card className={`gap-3 ${error ? 'border-destructive' : ''}`}>
         {pin ? (
-          <Row gap={space.md}>
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: radius.md,
-                backgroundColor: colors.successSoft,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
+          <Row className="gap-3">
+            <Box className="h-11 w-11 items-center justify-center rounded-md bg-success-soft">
               <Icon icon={MapPinCheck} tone="success" size="lg" />
-            </View>
-            <View style={{ flex: 1 }}>
+            </Box>
+            <Box className="flex-1">
               <Text variant="bodyStrong">{ar.staff.pinSaved}</Text>
               <Text variant="caption" tone="textSubtle">
                 {ltr(`${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`)}
               </Text>
-            </View>
+            </Box>
             <Pressable
               accessibilityRole="link"
               hitSlop={10}
@@ -200,9 +192,9 @@ function PinCard({
             </Pressable>
           </Row>
         ) : (
-          <Row gap={space.md}>
+          <Row className="gap-3">
             <Icon icon={MapPin} tone="textMuted" size="lg" />
-            <Text variant="caption" tone="textMuted" style={{ flex: 1 }}>
+            <Text variant="caption" tone="textMuted" className="flex-1">
               {ar.staff.pinHint}
             </Text>
           </Row>

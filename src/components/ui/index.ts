@@ -6,3 +6,5 @@ export * from './layout';
 export * from './surfaces';
 export * from './text';
 export * from './sheet';
+export * from './glass';
+export * from './motion';

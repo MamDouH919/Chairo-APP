@@ -1,11 +1,22 @@
 import type { LucideIcon } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 
-import { type Colors, elevation, hitTarget, radius, space, useTheme } from '@/theme';
+import { Badge as GBadge } from '@/components/gluestack/badge';
+import { Box } from '@/components/gluestack/box';
+import { Divider as GDivider } from '@/components/gluestack/divider';
+import { Pressable } from '@/components/gluestack/pressable';
+import { tva } from '@gluestack-ui/utils/nativewind-utils';
 
+import { Glass } from './glass';
 import { ChevronForward, Icon } from './icon';
-import { Text } from './text';
+import { PressableScale } from './motion';
+import { Text, type TextTone } from './text';
+
+const cardStyle = tva({
+  base: 'rounded-xl',
+  variants: { padded: { true: 'p-4' }, tone: { surface: '', ink: 'bg-ink', muted: 'bg-muted' } },
+});
 
 interface CardProps {
   children: ReactNode;
@@ -14,52 +25,62 @@ interface CardProps {
   padded?: boolean;
   tone?: 'surface' | 'ink' | 'muted';
   style?: StyleProp<ViewStyle>;
+  className?: string;
 }
 
-export function Card({ children, onPress, accessibilityLabel, padded = true, tone = 'surface', style }: CardProps) {
-  const { colors } = useTheme();
-  const bg = { surface: colors.surface, ink: colors.surfaceInk, muted: colors.surfaceMuted }[tone];
-  const base: StyleProp<ViewStyle> = [
-    styles.card,
-    { backgroundColor: bg, borderColor: tone === 'surface' ? colors.border : 'transparent' },
-    tone === 'surface' && elevation(colors),
-    padded && { padding: space.lg },
-    style,
-  ];
-  if (!onPress) return <View style={base}>{children}</View>;
+export function Card({
+  children,
+  onPress,
+  accessibilityLabel,
+  padded = true,
+  tone = 'surface',
+  style,
+  className = '',
+}: CardProps) {
+  const shape = cardStyle({ padded, tone, class: className });
+  const body =
+    tone === 'surface' ? (
+      <Glass className={shape} style={style}>
+        {children}
+      </Glass>
+    ) : (
+      <Box className={shape} style={style}>
+        {children}
+      </Box>
+    );
+  if (!onPress) return body;
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => [base, pressed && { opacity: 0.88 }]}>
-      {children}
-    </Pressable>
+      scaleTo={0.98}
+      dim={0.92}>
+      {body}
+    </PressableScale>
   );
 }
 
 type BadgeTone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'accent';
-const badgeColors = (c: Colors, t: BadgeTone) =>
-  ({
-    neutral: [c.surfaceMuted, 'textMuted'],
-    primary: [c.primarySoft, 'onPrimarySoft'],
-    success: [c.successSoft, 'success'],
-    warning: [c.warningSoft, 'warning'],
-    danger: [c.dangerSoft, 'danger'],
-    info: [c.infoSoft, 'info'],
-    accent: [c.accentSoft, 'accent'],
-  })[t] as [string, 'textMuted' | 'onPrimarySoft' | 'success' | 'warning' | 'danger' | 'info' | 'accent'];
+const BADGE: Record<BadgeTone, [string, TextTone]> = {
+  neutral: ['bg-muted', 'textMuted'],
+  primary: ['bg-secondary', 'onPrimarySoft'],
+  success: ['bg-success-soft', 'success'],
+  warning: ['bg-warning-soft', 'warning'],
+  danger: ['bg-destructive-soft', 'danger'],
+  info: ['bg-info-soft', 'info'],
+  accent: ['bg-accent', 'accent'],
+};
 
 export function Badge({ label, tone = 'neutral', icon }: { label: string; tone?: BadgeTone; icon?: LucideIcon }) {
-  const { colors } = useTheme();
-  const [bg, fg] = badgeColors(colors, tone);
+  const [bg, fg] = BADGE[tone];
   return (
-    <View style={[styles.badge, { backgroundColor: bg }]}>
+    <GBadge variant="secondary" className={`${bg} gap-1 rounded-full px-2.5 py-0.5 self-start`}>
       {icon && <Icon icon={icon} size={14} tone={fg} />}
       <Text variant="overline" tone={fg} numberOfLines={1}>
         {label}
       </Text>
-    </View>
+    </GBadge>
   );
 }
 
@@ -76,40 +97,40 @@ export function Chip({
   sublabel?: string;
   disabled?: boolean;
 }) {
-  const { colors } = useTheme();
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityState={{ selected: !!selected, disabled: !!disabled }}
       accessibilityLabel={sublabel ? `${label}، ${sublabel}` : label}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.chip,
-        {
-          backgroundColor: selected ? colors.primary : pressed ? colors.surfaceMuted : colors.surface,
-          borderColor: selected ? colors.primary : colors.border,
-          opacity: disabled ? 0.4 : 1,
-        },
-      ]}>
-      <Text variant="label" tone={selected ? 'onPrimary' : 'text'} align="center">
+      scaleTo={0.94}
+      // selected = solid ink pill, the strongest mark in the glass language
+      className={`min-h-12 min-w-20 items-center justify-center rounded-full border px-4 py-1 ${
+        selected ? 'bg-foreground border-foreground' : 'bg-card border-foreground/10'
+      } ${disabled ? 'opacity-40' : ''}`}>
+      <Text variant="label" tone={selected ? 'inverse' : 'text'} align="center">
         {label}
       </Text>
       {sublabel && (
-        <Text variant="overline" tone={selected ? 'onPrimary' : 'textSubtle'} align="center">
+        <Text
+          variant="overline"
+          tone={selected ? 'inverse' : 'textSubtle'}
+          align="center"
+          className={selected ? 'opacity-75' : ''}>
           {sublabel}
         </Text>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
-const AVATAR_TINTS = ['#0F766E', '#B45309', '#1D4ED8', '#7C3AED', '#BE185D', '#0369A1'];
+const AVATAR_TINTS = ['bg-avatar-1', 'bg-avatar-2', 'bg-avatar-3', 'bg-avatar-4', 'bg-avatar-5', 'bg-avatar-6'];
 
 export function Avatar({ name, size = 48 }: { name: string; size?: number }) {
   // Arabic letters join, so two initials read like a word ("مم"); use one letter for Arabic names.
   const words = name.trim().split(/\s+/);
-  const initials = /[\u0600-\u06FF]/.test(name)
+  const initials = /[؀-ۿ]/.test(name)
     ? words[0][0]
     : words
         .slice(0, 2)
@@ -117,21 +138,16 @@ export function Avatar({ name, size = 48 }: { name: string; size?: number }) {
         .join('');
   const tint = AVATAR_TINTS[[...name].reduce((a, ch) => a + ch.charCodeAt(0), 0) % AVATAR_TINTS.length];
   return (
-    <View
+    <Box
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: tint,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-      <Text variant={size > 44 ? 'heading' : 'label'} style={{ color: '#FFFFFF' }}>
+      className={`${tint} items-center justify-center`}
+      // dynamic diameter: arbitrary sizes can't be expressed as static classes
+      style={{ width: size, height: size, borderRadius: size / 2 }}>
+      <Text variant={size > 44 ? 'heading' : 'label'} tone="white">
         {initials}
       </Text>
-    </View>
+    </Box>
   );
 }
 
@@ -145,8 +161,8 @@ export function SectionHeader({
   action?: { label: string; onPress: () => void };
 }) {
   return (
-    <View style={styles.section}>
-      <View style={{ flex: 1 }}>
+    <Box className="mb-3 flex-row items-end gap-3">
+      <Box className="flex-1">
         <Text variant="heading" accessibilityRole="header">
           {title}
         </Text>
@@ -155,15 +171,15 @@ export function SectionHeader({
             {hint}
           </Text>
         )}
-      </View>
+      </Box>
       {action && (
-        <Pressable accessibilityRole="button" onPress={action.onPress} hitSlop={12} style={styles.sectionAction}>
+        <Pressable accessibilityRole="button" onPress={action.onPress} hitSlop={12} className="min-h-8 justify-center">
           <Text variant="label" tone="primary">
             {action.label}
           </Text>
         </Pressable>
       )}
-    </View>
+    </Box>
   );
 }
 
@@ -184,24 +200,22 @@ export function ListRow({
   danger?: boolean;
   last?: boolean;
 }) {
-  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={[title, value, subtitle].filter(Boolean).join('، ')}
       disabled={!onPress}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-        pressed && { backgroundColor: colors.surfaceMuted },
-      ]}>
+      className={`min-h-15 flex-row items-center gap-3 px-4 py-3 data-[active=true]:bg-glass-pressed ${
+        last ? '' : 'border-b border-border'
+      }`}>
       {icon && (
-        <View style={[styles.rowIcon, { backgroundColor: danger ? colors.dangerSoft : colors.surfaceMuted }]}>
+        <Box
+          className={`h-10 w-10 items-center justify-center rounded-full ${danger ? 'bg-destructive-soft' : 'bg-muted'}`}>
           <Icon icon={icon} size="md" tone={danger ? 'danger' : 'textMuted'} />
-        </View>
+        </Box>
       )}
-      <View style={{ flex: 1 }}>
+      <Box className="flex-1">
         <Text variant="bodyStrong" tone={danger ? 'danger' : 'text'}>
           {title}
         </Text>
@@ -210,7 +224,7 @@ export function ListRow({
             {subtitle}
           </Text>
         )}
-      </View>
+      </Box>
       {value && (
         <Text variant="label" tone="textMuted">
           {value}
@@ -222,42 +236,5 @@ export function ListRow({
 }
 
 export function Divider() {
-  const { colors } = useTheme();
-  return (
-    <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: space.md }} />
-  );
+  return <GDivider className="my-3" />;
 }
-
-const styles = StyleSheet.create({
-  card: { borderRadius: radius.xl, borderWidth: 1 },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    paddingHorizontal: space.sm + 2,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-    alignSelf: 'flex-start',
-  },
-  chip: {
-    minHeight: hitTarget,
-    minWidth: 76,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  section: { flexDirection: 'row', alignItems: 'flex-end', gap: space.md, marginBottom: space.md },
-  sectionAction: { minHeight: 32, justifyContent: 'center' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    minHeight: 60,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-  },
-  rowIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-});

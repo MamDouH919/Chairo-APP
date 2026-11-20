@@ -1,9 +1,18 @@
 import { Stack } from 'expo-router';
 
+import { stackTransitions } from '@/lib/transitions';
 import { useTheme } from '@/theme';
 
-/** Shop mode. Step 2 of BARBER-MODE.md turns this into the النهارده / الجاي / العملاء / المحل tabs. */
+/** Shop mode: the tabs (النهارده / المحل) plus the setup screens pushed on top of them. */
 export default function ShopLayout() {
   const { colors } = useTheme();
-  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} />;
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+        ...stackTransitions.push,
+      }}
+    />
+  );
 }

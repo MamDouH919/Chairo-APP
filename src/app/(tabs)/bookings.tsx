@@ -1,15 +1,20 @@
 import { router } from 'expo-router';
 import { CalendarPlus, History } from 'lucide-react-native';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useEffect, useState } from 'react';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { withUniwind } from 'uniwind';
+
+import { Box } from '@/components/gluestack/box';
+import { Pressable } from '@/components/gluestack/pressable';
 
 import { BookingCard, BookingCardSkeleton } from '@/components/booking-card';
-import { EmptyState, ErrorState, LoadMore, Screen, Stack, Text } from '@/components/ui';
+import { EmptyState, ErrorState, LoadMore, Reveal, Screen, Stack, Text } from '@/components/ui';
 import { useMyBookings } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
-import { radius, space, useTheme } from '@/theme';
+import { springs } from '@/theme';
+
+const AView = withUniwind(Animated.View);
 
 type Scope = 'upcoming' | 'past';
 
@@ -22,24 +27,16 @@ export default function Bookings() {
     <Screen
       edgeBottom={false}
       header={
-        <View
-          style={{
-            paddingTop: insets.top + space.lg,
-            paddingHorizontal: space.xl,
-            gap: space.lg,
-            width: '100%',
-            maxWidth: 680,
-            alignSelf: 'center',
-          }}>
+        <Box className="w-full max-w-170 gap-4 self-center px-5" style={{ paddingTop: insets.top + 16 }}>
           <Text variant="title" accessibilityRole="header">
             {ar.tabs.bookings}
           </Text>
           <Segmented value={scope} onChange={setScope} />
-        </View>
+        </Box>
       }
       refreshing={q.isRefetching}
       onRefresh={() => q.refetch()}>
-      <View style={{ paddingTop: space.lg }}>
+      <Box className="pt-4">
         {q.isPending ? (
           <Stack>
             <BookingCardSkeleton />
@@ -60,58 +57,58 @@ export default function Bookings() {
             <EmptyState icon={History} title={ar.bookings.emptyPast} />
           )
         ) : (
-          <Stack>
+          // keyed by scope: switching the segment replays the entrance for the new list
+          <Stack key={scope}>
             {q.data.map((b, i) => (
-              <Animated.View key={b.id} entering={FadeInDown.duration(280).delay(Math.min(i, 6) * 50)}>
+              <Reveal key={b.id} index={i}>
                 <BookingCard booking={b} />
-              </Animated.View>
+              </Reveal>
             ))}
             <LoadMore query={q} />
           </Stack>
         )}
-      </View>
+      </Box>
     </Screen>
   );
 }
 
 function Segmented({ value, onChange }: { value: Scope; onChange: (v: Scope) => void }) {
-  const { colors } = useTheme();
   const items: { key: Scope; label: string }[] = [
     { key: 'upcoming', label: ar.bookings.upcoming },
     { key: 'past', label: ar.bookings.past },
   ];
   return (
-    <View style={[styles.seg, { backgroundColor: colors.surfaceMuted }]} accessibilityRole="tablist">
-      {items.map((it) => {
-        const active = it.key === value;
-        return (
-          <Pressable
-            key={it.key}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            onPress={() => onChange(it.key)}
-            style={[
-              styles.segItem,
-              active && {
-                backgroundColor: colors.surface,
-                shadowColor: colors.shadow,
-                shadowOpacity: 0.08,
-                shadowRadius: 6,
-                shadowOffset: { width: 0, height: 2 },
-                elevation: 1,
-              },
-            ]}>
-            <Text variant="label" tone={active ? 'text' : 'textMuted'} align="center">
-              {it.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
+    <Box className="flex-row rounded-lg bg-muted p-1" accessibilityRole="tablist">
+      {items.map((it) => (
+        <SegmentItem key={it.key} label={it.label} active={it.key === value} onPress={() => onChange(it.key)} />
+      ))}
+    </Box>
   );
 }
 
-const styles = StyleSheet.create({
-  seg: { flexDirection: 'row', padding: 4, borderRadius: radius.lg },
-  segItem: { flex: 1, minHeight: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-});
+/**
+ * Each segment owns a thumb that fades and settles in when selected (same idea as the tab bar lens).
+ * A single sliding thumb would need `translateX`, which native RTL does not mirror.
+ */
+function SegmentItem({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const on = useSharedValue(active ? 1 : 0);
+  useEffect(() => {
+    on.set(withSpring(active ? 1 : 0, springs.select));
+  }, [active, on]);
+  const thumb = useAnimatedStyle(() => ({
+    opacity: Math.max(0, Math.min(1, on.value)),
+    transform: [{ scale: interpolate(on.value, [0, 1], [0.92, 1]) }],
+  }));
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      className="min-h-11 flex-1 items-center justify-center rounded-md">
+      <AView pointerEvents="none" className="absolute inset-0 rounded-md bg-card shadow-sm" style={thumb} />
+      <Text variant="label" tone={active ? 'text' : 'textMuted'} align="center">
+        {label}
+      </Text>
+    </Pressable>
+  );
+}

@@ -1,13 +1,12 @@
 import { router } from 'expo-router';
 import { Ban, CalendarClock } from 'lucide-react-native';
-import { View } from 'react-native';
 
 import { useMyRecord } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import { formatDayMonth } from '@/lib/format';
-import { space } from '@/theme';
 
 import { Card, Icon, Row, Text } from './ui';
+import { Box } from '@/components/gluestack/box';
 
 /** Explains a booking restriction. Renders nothing for a customer without one. */
 export function RestrictionNotice({ linkToRecord }: { linkToRecord?: boolean }) {
@@ -25,9 +24,9 @@ export function RestrictionNotice({ linkToRecord }: { linkToRecord?: boolean }) 
       tone="muted"
       onPress={linkToRecord ? () => router.push('/account/strikes') : undefined}
       accessibilityLabel={linkToRecord ? `${title}. ${hint} ${ar.record.openRecord}` : undefined}>
-      <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
+      <Row className="gap-3 items-start">
         <Icon icon={suspended ? Ban : CalendarClock} tone={suspended ? 'danger' : 'warning'} />
-        <View style={{ flex: 1, gap: 2 }}>
+        <Box className="flex-1 gap-0.5">
           <Text variant="bodyStrong">{title}</Text>
           <Text variant="caption" tone="textMuted">
             {hint}
@@ -37,7 +36,7 @@ export function RestrictionNotice({ linkToRecord }: { linkToRecord?: boolean }) 
               {ar.record.openRecord}
             </Text>
           )}
-        </View>
+        </Box>
       </Row>
     </Card>
   );

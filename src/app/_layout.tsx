@@ -12,15 +12,21 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaListener } from 'react-native-safe-area-context';
+import { Uniwind } from 'uniwind';
 import { CircleAlert } from 'lucide-react-native';
 
 import { DirectionProvider } from '@/components/direction-provider';
+import { GluestackUIProvider } from '@/components/gluestack/gluestack-ui-provider';
 import { EmptyState, OfflineBanner, ToastHost } from '@/components/ui';
 import { ar } from '@/i18n/ar';
 import { queryClient } from '@/lib/query-client';
 import { useAuth } from '@/stores/auth';
 import { useMode } from '@/stores/mode';
+import { stackTransitions } from '@/lib/transitions';
 import { useTheme } from '@/theme';
+
+import '../../global.css';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -70,60 +76,65 @@ export default function RootLayout() {
 
   return (
     <DirectionProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider
-            value={{
-              ...navTheme,
-              colors: {
-                ...navTheme.colors,
-                background: colors.background,
-                card: colors.surface,
-                primary: colors.primary,
-                text: colors.text,
-                border: colors.border,
-              },
-            }}>
-            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.background },
-              }}>
-              <Stack.Screen name="index" />
-              <Stack.Protected guard={status === 'signedOut'}>
-                <Stack.Screen name="(auth)" />
-              </Stack.Protected>
-              <Stack.Protected guard={status === 'needsProfile'}>
-                <Stack.Screen name="profile-setup" />
-              </Stack.Protected>
-              <Stack.Protected guard={status === 'signedIn' && inShop}>
-                <Stack.Screen name="(shop)" />
-              </Stack.Protected>
-              <Stack.Protected guard={status === 'signedIn' && !inShop}>
-                <Stack.Screen name="(tabs)" />
-              </Stack.Protected>
-              <Stack.Protected guard={status === 'signedIn'}>
-                <Stack.Screen name="staff/no-shop" />
-                <Stack.Screen name="staff/register-shop" />
-                <Stack.Screen name="staff/pending" />
-                <Stack.Screen name="staff/pick-shop" />
-                <Stack.Screen name="shop/[slug]" />
-                <Stack.Screen name="book/[slug]" />
-                <Stack.Screen name="book/success" options={{ gestureEnabled: false, animation: 'fade' }} />
-                <Stack.Screen name="booking/[id]" />
-                <Stack.Screen name="reschedule/[id]" />
-                <Stack.Screen name="check-in/[id]" />
-                <Stack.Screen name="account/strikes" />
-                <Stack.Screen name="account/sessions" />
-                <Stack.Screen name="policy" options={{ presentation: 'modal' }} />
-              </Stack.Protected>
-            </Stack>
-            <OfflineBanner />
-            <ToastHost />
-          </ThemeProvider>
-        </QueryClientProvider>
-      </GestureHandlerRootView>
+      <SafeAreaListener onChange={({ insets }) => Uniwind.updateInsets(insets)}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <GluestackUIProvider mode="system">
+            <QueryClientProvider client={queryClient}>
+              <ThemeProvider
+                value={{
+                  ...navTheme,
+                  colors: {
+                    ...navTheme.colors,
+                    background: colors.background,
+                    card: colors.surface,
+                    primary: colors.primary,
+                    text: colors.text,
+                    border: colors.border,
+                  },
+                }}>
+                <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: colors.background },
+                    ...stackTransitions.push,
+                  }}>
+                  <Stack.Screen name="index" options={stackTransitions.swap} />
+                  <Stack.Protected guard={status === 'signedOut'}>
+                    <Stack.Screen name="(auth)" options={stackTransitions.swap} />
+                  </Stack.Protected>
+                  <Stack.Protected guard={status === 'needsProfile'}>
+                    <Stack.Screen name="profile-setup" options={stackTransitions.swap} />
+                  </Stack.Protected>
+                  <Stack.Protected guard={status === 'signedIn' && inShop}>
+                    <Stack.Screen name="(shop)" options={stackTransitions.swap} />
+                  </Stack.Protected>
+                  <Stack.Protected guard={status === 'signedIn' && !inShop}>
+                    <Stack.Screen name="(tabs)" options={stackTransitions.swap} />
+                  </Stack.Protected>
+                  <Stack.Protected guard={status === 'signedIn'}>
+                    <Stack.Screen name="staff/no-shop" />
+                    <Stack.Screen name="staff/register-shop" />
+                    <Stack.Screen name="staff/pending" />
+                    <Stack.Screen name="staff/pick-shop" />
+                    <Stack.Screen name="shop/[slug]" />
+                    <Stack.Screen name="book/[slug]" />
+                    <Stack.Screen name="book/success" options={{ gestureEnabled: false, ...stackTransitions.swap }} />
+                    <Stack.Screen name="booking/[id]" />
+                    <Stack.Screen name="reschedule/[id]" />
+                    <Stack.Screen name="check-in/[id]" />
+                    <Stack.Screen name="account/strikes" />
+                    <Stack.Screen name="account/sessions" />
+                    <Stack.Screen name="policy" options={{ presentation: 'modal' }} />
+                  </Stack.Protected>
+                </Stack>
+                <OfflineBanner />
+                <ToastHost />
+              </ThemeProvider>
+            </QueryClientProvider>
+          </GluestackUIProvider>
+        </GestureHandlerRootView>
+      </SafeAreaListener>
     </DirectionProvider>
   );
 }

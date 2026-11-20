@@ -7,7 +7,6 @@ import { ar } from '@/i18n/ar';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { normalizeEgyptPhone, toE164 } from '@/lib/format';
-import { space } from '@/theme';
 
 export default function PhoneScreen() {
   const barber = useLocalSearchParams<{ as?: string }>().as === 'barber';
@@ -36,9 +35,9 @@ export default function PhoneScreen() {
       keyboard
       header={<ScreenHeader />}
       footer={<Button label={ar.auth.sendCode} onPress={submit} loading={send.isPending} disabled={!value} />}>
-      <Stack gap={space.xxl} style={{ paddingTop: space.lg }}>
-        <Stack gap={space.xs}>
-          <Text variant="title" accessibilityRole="header">
+      <Stack className="gap-6 pt-4">
+        <Stack className="gap-1">
+          <Text variant="display" accessibilityRole="header">
             {barber ? ar.auth.barberPhoneTitle : ar.auth.phoneTitle}
           </Text>
           <Text tone="textMuted">{barber ? ar.auth.barberPhoneSubtitle : ar.auth.phoneSubtitle}</Text>
@@ -46,6 +45,7 @@ export default function PhoneScreen() {
         <TextField
           label={ar.auth.phoneLabel}
           prefix="+20"
+          prefixIcon="🇪🇬"
           ltr
           value={value}
           onChangeText={(t) => {

@@ -26,9 +26,16 @@ export function formatRelativeDay(iso: string, tz: string = env.timezone) {
   return `${formatWeekday(iso, tz)} ${formatDayMonth(iso, tz)}`;
 }
 
+/** "بعد 42 د" / "بعد 3 س" for a start within the next day; null otherwise. */
+export function formatCountdown(iso: string, now = Date.now()) {
+  const min = Math.round((new Date(iso).getTime() - now) / 60000);
+  if (min < 1 || min >= 24 * 60) return null;
+  return ar.home.startsIn(min < 60 ? `${min} ${ar.common.min}` : `${Math.round(min / 60)} ${ar.common.hourShort}`);
+}
+
 export const isPast = (iso: string) => new Date(iso).getTime() < Date.now();
 
-export const formatWhen =(iso: string, tz?: string) => `${formatRelativeDay(iso, tz)}، ${formatTime(iso, tz)}`;
+export const formatWhen = (iso: string, tz?: string) => `${formatRelativeDay(iso, tz)}، ${formatTime(iso, tz)}`;
 
 export const formatPrice = (egp: number) => `${egp.toLocaleString('en-US')} ${ar.common.egp}`;
 

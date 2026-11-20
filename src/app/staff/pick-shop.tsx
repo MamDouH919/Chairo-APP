@@ -6,7 +6,6 @@ import { Button, Screen, Stack, Text } from '@/components/ui';
 import { ar } from '@/i18n/ar';
 import { activeMemberships } from '@/lib/landing';
 import { useMode } from '@/stores/mode';
-import { space } from '@/theme';
 
 /** 2+ shops and none remembered: pick one. The choice is remembered per user. */
 export default function PickShop() {
@@ -15,14 +14,14 @@ export default function PickShop() {
     <Screen
       header={<StaffTopBar right={<AvatarMenuButton size={40} />} />}
       footer={<Button label={ar.staff.asCustomer} icon={UserRound} variant="outline" onPress={switchToCustomerMode} />}>
-      <Stack gap={space.xxl} style={{ paddingTop: space.lg }}>
-        <Stack gap={space.xs}>
+      <Stack className="gap-6 pt-4">
+        <Stack className="gap-1">
           <Text variant="title" accessibilityRole="header">
             {ar.staff.pickTitle}
           </Text>
           <Text tone="textMuted">{ar.staff.pickHint}</Text>
         </Stack>
-        <Stack gap={space.md}>
+        <Stack className="gap-3">
           {shops.map((m) => (
             <ShopOption key={m.shopId} m={m} onPress={() => void openShop(m.shopId)} />
           ))}

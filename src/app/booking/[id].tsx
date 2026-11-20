@@ -1,8 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { CalendarClock, CircleAlert, MapPin, Scissors, UserRound } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Box } from '@/components/gluestack/box';
+import { Pressable } from '@/components/gluestack/pressable';
 import { BookingActionCard, RunningLateCard } from '@/components/booking-action-card';
 import { StatusBadge } from '@/components/booking-card';
 import { NoteSheet } from '@/components/note-sheet';
@@ -28,7 +29,7 @@ import { api, type BookingDetail } from '@/lib/api';
 import { canDispute, canReportLate } from '@/lib/booking-actions';
 import { errorMessage } from '@/lib/errors';
 import { formatDuration, formatPrice, formatRelativeDay, formatTime, timeAgo } from '@/lib/format';
-import { radius, space, useTheme } from '@/theme';
+import { radius } from '@/theme';
 
 export default function BookingDetails() {
   const { id, cancel: cancelParam } = useLocalSearchParams<{ id: string; cancel?: string }>();
@@ -71,58 +72,58 @@ export default function BookingDetails() {
   // While the barber is late, RunningLateCard already offers both.
   const footer =
     !b.delayMin && (b.canReschedule || b.canCancel) ? (
-      <Row gap={space.sm}>
+      <Row className="gap-2">
         {b.canReschedule && (
-          <View style={{ flex: 1 }}>
+          <Box className="flex-1">
             <Button
               label={ar.bookings.reschedule}
               variant="outline"
               onPress={() => router.push({ pathname: '/reschedule/[id]', params: { id: b.id } })}
             />
-          </View>
+          </Box>
         )}
         {b.canCancel && (
-          <View style={{ flex: 1 }}>
+          <Box className="flex-1">
             <Button label={ar.bookings.cancelBooking} variant="danger" onPress={() => setAskCancel(true)} />
-          </View>
+          </Box>
         )}
       </Row>
     ) : undefined;
 
   return (
     <Screen header={header} footer={footer} refreshing={q.isRefetching} onRefresh={() => q.refetch()}>
-      <Stack gap={space.xxl}>
+      <Stack className="gap-6">
         <RunningLateCard booking={b} onCancel={() => setAskCancel(true)} />
         <BookingActionCard booking={b} hideLate />
 
-        <Card tone="ink" style={{ padding: space.xl, gap: space.lg }}>
-          <Row style={{ justifyContent: 'space-between' }}>
+        <Card tone="ink" className="gap-4 p-5">
+          <Row className="justify-between">
             <StatusBadge status={b.status} />
             <Text variant="caption" tone="onInkMuted">
               {ar.bookings.code}:{' '}
-              <Text variant="bodyStrong" tone="onInk" style={{ letterSpacing: 2 }}>
+              <Text variant="bodyStrong" tone="onInk" className="tracking-widest">
                 {b.code}
               </Text>
             </Text>
           </Row>
-          <View>
+          <Box>
             <Text variant="overline" tone="onInkMuted">
               {formatRelativeDay(b.startsAt, tz)}
             </Text>
             <Text variant="display" tone="onInk">
               {formatTime(b.startsAt, tz)}
             </Text>
-          </View>
-          <Row gap={space.md}>
+          </Box>
+          <Row className="gap-3">
             <Avatar name={b.barber.displayName} size={44} />
-            <View style={{ flex: 1 }}>
+            <Box className="flex-1">
               <Text variant="bodyStrong" tone="onInk">
                 {b.service?.name} {ar.book.with} {b.barber.displayName}
               </Text>
               <Text variant="caption" tone="onInkMuted">
                 {formatDuration(b.durationMin)} · {formatPrice(b.priceEgp)}
               </Text>
-            </View>
+            </Box>
           </Row>
         </Card>
 
@@ -145,12 +146,12 @@ export default function BookingDetails() {
         </Card>
 
         {b.note ? (
-          <View>
+          <Box>
             <SectionHeader title={ar.book.note.replace(' (اختياري)', '')} />
             <Card tone="muted">
               <Text tone="textMuted">{b.note}</Text>
             </Card>
-          </View>
+          </Box>
         ) : null}
 
         {b.timeline.length > 0 && <Timeline booking={b} />}
@@ -241,22 +242,17 @@ function InfoRow({
   onPress?: () => void;
   last?: boolean;
 }) {
-  const { colors } = useTheme();
   return (
     <Pressable
       disabled={!onPress}
       onPress={onPress}
       accessibilityRole={onPress ? 'link' : undefined}
       accessibilityLabel={`${label}: ${value}`}
-      style={({ pressed }) => [
-        styles.info,
-        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-        pressed && { opacity: 0.7 },
-      ]}>
-      <View style={[styles.infoIcon, { backgroundColor: colors.surfaceMuted }]}>
+      className={`flex-row items-center gap-3 py-3 data-[active=true]:opacity-70 ${last ? '' : 'border-b border-border'}`}>
+      <Box className="h-10 w-10 items-center justify-center rounded-md bg-muted">
         <Icon icon={icon} size="md" tone="textMuted" />
-      </View>
-      <View style={{ flex: 1 }}>
+      </Box>
+      <Box className="flex-1">
         <Text variant="caption" tone="textSubtle">
           {label}
         </Text>
@@ -268,38 +264,35 @@ function InfoRow({
             {sub}
           </Text>
         )}
-      </View>
+      </Box>
     </Pressable>
   );
 }
 
 function Timeline({ booking }: { booking: BookingDetail }) {
-  const { colors } = useTheme();
   return (
-    <View>
+    <Box>
       <SectionHeader title={ar.bookings.timeline} />
       <Card>
-        {booking.timeline.map((e, i) => (
-          <Row key={i} gap={space.md} style={{ alignItems: 'flex-start' }}>
-            <View style={{ alignItems: 'center', width: 14 }}>
-              <View
-                style={[
-                  styles.dot,
-                  { backgroundColor: i === booking.timeline.length - 1 ? colors.primary : colors.borderStrong },
-                ]}
-              />
-              {i < booking.timeline.length - 1 && <View style={[styles.line, { backgroundColor: colors.border }]} />}
-            </View>
-            <View style={{ flex: 1, paddingBottom: i < booking.timeline.length - 1 ? space.lg : 0 }}>
-              <Text variant="bodyStrong">{ar.bookings.status[e.toStatus]}</Text>
-              <Text variant="caption" tone="textSubtle">
-                {ar.bookings.actor[e.actorType]} · {timeAgo(e.at)}
-              </Text>
-            </View>
-          </Row>
-        ))}
+        {booking.timeline.map((e, i) => {
+          const last = i === booking.timeline.length - 1;
+          return (
+            <Row key={i} className="items-start gap-3">
+              <Box className="w-3.5 items-center">
+                <Box className={`mt-1.75 h-3 w-3 rounded-full ${last ? 'bg-primary' : 'bg-border-strong'}`} />
+                {!last && <Box className="mt-1 w-0.5 flex-1 bg-border" />}
+              </Box>
+              <Box className={`flex-1 ${last ? '' : 'pb-4'}`}>
+                <Text variant="bodyStrong">{ar.bookings.status[e.toStatus]}</Text>
+                <Text variant="caption" tone="textSubtle">
+                  {ar.bookings.actor[e.actorType]} · {timeAgo(e.at)}
+                </Text>
+              </Box>
+            </Row>
+          );
+        })}
       </Card>
-    </View>
+    </Box>
   );
 }
 
@@ -316,30 +309,22 @@ function CancelSheet({
   onClose: () => void;
   onConfirm: () => void;
 }) {
-  const { colors } = useTheme();
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <View style={[styles.sheetIcon, { backgroundColor: late ? colors.warningSoft : colors.dangerSoft }]}>
+      <Box
+        className={`h-16 w-16 items-center justify-center rounded-full ${late ? 'bg-warning-soft' : 'bg-destructive-soft'}`}>
         <Icon icon={CircleAlert} size="xl" tone={late ? 'warning' : 'danger'} />
-      </View>
+      </Box>
       <Text variant="heading" align="center" accessibilityRole="header">
         {ar.bookings.cancelTitle}
       </Text>
       <Text tone={late ? 'warning' : 'textMuted'} align="center">
         {late ? ar.bookings.cancelLate : ar.bookings.cancelFree}
       </Text>
-      <Stack gap={space.sm} style={{ alignSelf: 'stretch', marginTop: space.sm }}>
+      <Stack className="mt-2 gap-2 self-stretch">
         <Button label={ar.bookings.cancelConfirm} variant="danger" loading={loading} onPress={onConfirm} />
         <Button label={ar.bookings.keep} variant="ghost" onPress={onClose} />
       </Stack>
     </Sheet>
   );
 }
-
-const styles = StyleSheet.create({
-  info: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md },
-  infoIcon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  dot: { width: 12, height: 12, borderRadius: 6, marginTop: 7 },
-  line: { width: 2, flex: 1, marginTop: 4 },
-  sheetIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-});

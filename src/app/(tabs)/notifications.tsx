@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Bell, BellRing, CheckCheck } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Box } from '@/components/gluestack/box';
 
 import {
   Card,
@@ -11,6 +12,8 @@ import {
   Icon,
   IconButton,
   LoadMore,
+  PressableScale,
+  Reveal,
   Row,
   Screen,
   Skeleton,
@@ -21,7 +24,7 @@ import { qk, useNotifications } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import { api, type AppNotification } from '@/lib/api';
 import { timeAgo } from '@/lib/format';
-import { radius, space, useTheme } from '@/theme';
+import { radius } from '@/theme';
 
 export default function Notifications() {
   const insets = useSafeAreaInsets();
@@ -43,15 +46,7 @@ export default function Notifications() {
     <Screen
       edgeBottom={false}
       header={
-        <Row
-          style={{
-            paddingTop: insets.top + space.lg,
-            paddingHorizontal: space.xl,
-            justifyContent: 'space-between',
-            width: '100%',
-            maxWidth: 680,
-            alignSelf: 'center',
-          }}>
+        <Row className="w-full max-w-170 justify-between self-center px-5" style={{ paddingTop: insets.top + 16 }}>
           <Text variant="title" accessibilityRole="header">
             {ar.notifications.title}
           </Text>
@@ -67,7 +62,7 @@ export default function Notifications() {
       }
       refreshing={q.isRefetching}
       onRefresh={() => q.refetch()}>
-      <View style={{ paddingTop: space.lg }}>
+      <Box className="pt-4">
         {q.isPending ? (
           <Stack>
             {[0, 1, 2].map((i) => (
@@ -79,54 +74,50 @@ export default function Notifications() {
         ) : q.data.length === 0 ? (
           <EmptyState icon={Bell} title={ar.notifications.empty} hint={ar.notifications.emptyHint} />
         ) : (
-          <Stack gap={space.sm}>
-            {q.data.map((n) => (
-              <NotificationItem key={n.id} n={n} onPress={() => open(n)} />
+          <Stack className="gap-2">
+            {q.data.map((n, i) => (
+              <Reveal key={n.id} index={i}>
+                <NotificationItem n={n} onPress={() => open(n)} />
+              </Reveal>
             ))}
             <LoadMore query={q} />
           </Stack>
         )}
-      </View>
+      </Box>
     </Screen>
   );
 }
 
 function NotificationItem({ n, onPress }: { n: AppNotification; onPress: () => void }) {
-  const { colors } = useTheme();
   const unread = !n.readAt;
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`${unread ? 'غير مقروء، ' : ''}${n.title}، ${n.body}`}
-      onPress={onPress}>
-      {({ pressed }) => (
-        <Card style={[{ opacity: pressed ? 0.85 : 1 }, unread && { borderColor: colors.primary }]}>
-          <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
-            <View style={[styles.icon, { backgroundColor: unread ? colors.primarySoft : colors.surfaceMuted }]}>
-              <Icon icon={BellRing} size="md" tone={unread ? 'primary' : 'textSubtle'} />
-            </View>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Row style={{ justifyContent: 'space-between' }}>
-                <Text variant="bodyStrong" style={{ flex: 1 }} numberOfLines={1}>
-                  {n.title}
-                </Text>
-                <Text variant="caption" tone="textSubtle">
-                  {timeAgo(n.createdAt)}
-                </Text>
-              </Row>
-              <Text variant="caption" tone="textMuted">
-                {n.body}
+      onPress={onPress}
+      scaleTo={0.98}
+      dim={0.9}>
+      <Card className={unread ? 'border-primary' : ''}>
+        <Row className="items-start gap-3">
+          <Box className={`h-10 w-10 items-center justify-center rounded-md ${unread ? 'bg-secondary' : 'bg-muted'}`}>
+            <Icon icon={BellRing} size="md" tone={unread ? 'primary' : 'textSubtle'} />
+          </Box>
+          <Box className="flex-1 gap-0.5">
+            <Row className="justify-between">
+              <Text variant="bodyStrong" className="flex-1" numberOfLines={1}>
+                {n.title}
               </Text>
-            </View>
-            {unread && <View style={[styles.dot, { backgroundColor: colors.primary }]} />}
-          </Row>
-        </Card>
-      )}
-    </Pressable>
+              <Text variant="caption" tone="textSubtle">
+                {timeAgo(n.createdAt)}
+              </Text>
+            </Row>
+            <Text variant="caption" tone="textMuted">
+              {n.body}
+            </Text>
+          </Box>
+          {unread && <Box className="mt-2 h-2 w-2 rounded-full bg-primary" />}
+        </Row>
+      </Card>
+    </PressableScale>
   );
 }
-
-const styles = StyleSheet.create({
-  icon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  dot: { width: 8, height: 8, borderRadius: 4, marginTop: 9 },
-});

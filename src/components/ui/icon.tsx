@@ -1,12 +1,16 @@
 import { ChevronLeft, ChevronRight, type LucideIcon, type LucideProps } from 'lucide-react-native';
 import { I18nManager, Platform } from 'react-native';
 
-import { type Colors, iconSize, iconStroke, useTheme } from '@/theme';
+import { Icon as GIcon } from '@/components/gluestack/icon';
+import { iconSize, iconStroke } from '@/theme';
+
+import { TONE_TEXT, type TextTone } from './text';
 
 export interface IconProps extends Omit<LucideProps, 'color' | 'size'> {
   icon: LucideIcon;
   size?: keyof typeof iconSize | number;
-  tone?: keyof Colors;
+  tone?: TextTone;
+  className?: string;
 }
 
 /** Native-only a11y props; on web the SVG gets aria-hidden instead. */
@@ -16,15 +20,15 @@ const hidden =
     : { accessibilityElementsHidden: true, importantForAccessibility: 'no-hide-descendants' as const };
 
 /** One icon family (Lucide), one stroke width, sizes from tokens. Decorative by default. */
-export function Icon({ icon: Glyph, size = 'md', tone = 'text', ...rest }: IconProps) {
-  const { colors } = useTheme();
+export function Icon({ icon, size = 'md', tone = 'text', className, ...rest }: IconProps) {
   return (
-    <Glyph
+    <GIcon
+      as={icon}
       size={typeof size === 'number' ? size : iconSize[size]}
-      color={colors[tone]}
       strokeWidth={iconStroke}
+      className={`${TONE_TEXT[tone]} ${className ?? ''}`}
       {...hidden}
-      {...rest}
+      {...(rest as object)}
     />
   );
 }

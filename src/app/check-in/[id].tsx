@@ -2,15 +2,31 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CameraOff, CircleAlert } from 'lucide-react-native';
 import { useRef, useState } from 'react';
-import { Linking, Platform, StyleSheet, View } from 'react-native';
+import { Linking, Platform } from 'react-native';
+import { withUniwind } from 'uniwind';
 
-import { Button, Card, EmptyState, Icon, Row, Screen, ScreenHeader, Skeleton, Stack, Text, toast } from '@/components/ui';
-import { env } from '@/config/env';
+import { Box } from '@/components/gluestack/box';
+
+import {
+  Button,
+  Card,
+  EmptyState,
+  Icon,
+  Row,
+  Screen,
+  ScreenHeader,
+  Skeleton,
+  Stack,
+  Text,
+  toast,
+} from '@/components/ui';
 import { useCheckIn } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import { parseCheckinToken } from '@/lib/booking-actions';
 import { errorMessage } from '@/lib/errors';
-import { radius, space } from '@/theme';
+import { radius } from '@/theme';
+
+const Camera = withUniwind(CameraView);
 
 export default function CheckIn() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,10 +59,6 @@ export default function CheckIn() {
   };
 
   const header = <ScreenHeader title={ar.checkIn.title} />;
-  // Simulators have no camera, and the mock accepts any token.
-  const simulate = env.useMocks && (
-    <Button label={ar.checkIn.simulate} variant="ghost" onPress={() => submit('mock-checkin-token')} />
-  );
 
   if (!permission) {
     return (
@@ -72,43 +84,37 @@ export default function CheckIn() {
           }
         />
         {problem && <Text tone="danger">{problem}</Text>}
-        {simulate}
       </Screen>
     );
   }
 
   return (
     <Screen header={header}>
-      <Stack gap={space.lg}>
+      <Stack className="gap-4">
         <Text tone="textMuted" align="center">
           {ar.checkIn.hint}
         </Text>
-        <View style={styles.camera}>
-          <CameraView
-            style={StyleSheet.absoluteFill}
+        <Box className="aspect-square overflow-hidden rounded-xl bg-black">
+          <Camera
+            className="absolute inset-0"
             facing="back"
             barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
             onBarcodeScanned={onScanned}
           />
-        </View>
+        </Box>
         {checkIn.isPending && <Text align="center">{ar.common.loading}</Text>}
         {problem && (
           <Card tone="muted">
             <Stack>
-              <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
+              <Row className="items-start gap-3">
                 <Icon icon={CircleAlert} tone="danger" />
-                <Text style={{ flex: 1 }}>{problem}</Text>
+                <Text className="flex-1">{problem}</Text>
               </Row>
               <Button label={ar.common.retry} variant="secondary" size="md" onPress={scanAgain} />
             </Stack>
           </Card>
         )}
-        {simulate}
       </Stack>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  camera: { aspectRatio: 1, borderRadius: radius.xl, overflow: 'hidden', backgroundColor: '#000' },
-});

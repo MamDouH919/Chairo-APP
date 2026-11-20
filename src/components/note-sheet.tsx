@@ -2,7 +2,6 @@ import { useState } from 'react';
 
 import { ar } from '@/i18n/ar';
 import { errorMessage } from '@/lib/errors';
-import { space } from '@/theme';
 
 import { Button, Sheet, Stack, Text, TextField } from './ui';
 
@@ -35,7 +34,7 @@ export function NoteSheet({
 
   return (
     <Sheet visible onClose={onClose}>
-      <Stack gap={space.lg} style={{ alignSelf: 'stretch' }}>
+      <Stack className="gap-4 self-stretch">
         <Text variant="heading" accessibilityRole="header">
           {title}
         </Text>

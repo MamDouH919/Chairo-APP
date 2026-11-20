@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
 import { Check, LogOut, Scissors, Store, UserRound } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+
+import { Box } from '@/components/gluestack/box';
+import { Pressable } from '@/components/gluestack/pressable';
 
 import { Avatar, Badge, Icon, ListRow, Sheet, Stack, Text } from '@/components/ui';
 import { ar } from '@/i18n/ar';
@@ -10,7 +12,6 @@ import { formatPhone } from '@/lib/format';
 import { activeMemberships } from '@/lib/landing';
 import { useAuth } from '@/stores/auth';
 import { useMode } from '@/stores/mode';
-import { hitTarget, radius, space, useTheme } from '@/theme';
 
 /** Customer → shop: re-checks memberships, then lands on the last shop, the picker, or "no shop". */
 export async function switchToShopMode() {
@@ -44,7 +45,7 @@ export function AvatarMenuButton({ size = 44 }: { size?: number }) {
         accessibilityLabel={ar.staff.menuTitle}
         hitSlop={6}
         onPress={() => setOpen(true)}
-        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, minWidth: hitTarget, alignItems: 'center' })}>
+        className="min-w-12 items-center data-[active=true]:opacity-70">
         <Avatar name={name} size={size} />
       </Pressable>
       <ModeMenu visible={open} onClose={() => setOpen(false)} />
@@ -59,7 +60,6 @@ export function ModeMenu({ visible, onClose }: { visible: boolean; onClose: () =
   const shopId = useMode((s) => s.shopId);
   const shops = activeMemberships(useMode((s) => s.memberships));
   const inShop = mode === 'shop';
-  const { colors } = useTheme();
 
   const run = (fn: () => Promise<void>) => {
     onClose();
@@ -68,21 +68,21 @@ export function ModeMenu({ visible, onClose }: { visible: boolean; onClose: () =
 
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <Stack gap={space.lg} style={{ alignSelf: 'stretch' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+      <Stack className="gap-4 self-stretch">
+        <Box className="flex-row items-center gap-3">
           <Avatar name={user?.name ?? '?'} size={52} />
-          <View style={{ flex: 1 }}>
+          <Box className="flex-1">
             <Text variant="heading" numberOfLines={1}>
               {user?.name}
             </Text>
             <Text variant="label" tone="textMuted">
               {user ? formatPhone(user.phone) : ''}
             </Text>
-          </View>
-        </View>
+          </Box>
+        </Box>
 
         {inShop && shops.length > 1 && (
-          <Stack gap={space.sm}>
+          <Stack className="gap-2">
             <Text variant="overline" tone="textSubtle">
               {ar.staff.switchShop}
             </Text>
@@ -97,7 +97,7 @@ export function ModeMenu({ visible, onClose }: { visible: boolean; onClose: () =
           </Stack>
         )}
 
-        <View style={{ borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
+        <Box className="overflow-hidden rounded-lg border border-border">
           {inShop ? (
             <ListRow
               icon={UserRound}
@@ -120,40 +120,31 @@ export function ModeMenu({ visible, onClose }: { visible: boolean; onClose: () =
             last
             onPress={() => run(() => useAuth.getState().signOut())}
           />
-        </View>
+        </Box>
       </Stack>
     </Sheet>
   );
 }
 
 export function ShopOption({ m, selected, onPress }: { m: StaffMembership; selected?: boolean; onPress: () => void }) {
-  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ checked: !!selected }}
       accessibilityLabel={`${m.shopName}، ${roleLine(m)}`}
       onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: 72,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: space.md,
-        padding: space.md,
-        borderRadius: radius.lg,
-        borderWidth: selected ? 2 : 1,
-        borderColor: selected ? colors.primary : colors.border,
-        backgroundColor: pressed ? colors.surfaceMuted : colors.surface,
-      })}>
+      className={`min-h-18 flex-row items-center gap-3 rounded-lg bg-card p-3 data-[active=true]:bg-muted ${
+        selected ? 'border-2 border-primary' : 'border border-border'
+      }`}>
       <Avatar name={m.shopName} size={48} />
-      <View style={{ flex: 1, gap: 2 }}>
+      <Box className="flex-1 gap-0.5">
         <Text variant="bodyStrong" numberOfLines={1}>
           {m.shopName}
         </Text>
-        <View style={{ flexDirection: 'row' }}>
+        <Box className="flex-row">
           <Badge label={roleLine(m)} tone={m.role === 'OWNER' ? 'accent' : 'primary'} />
-        </View>
-      </View>
+        </Box>
+      </Box>
       {selected && <Icon icon={Check} tone="primary" size="lg" />}
     </Pressable>
   );

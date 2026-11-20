@@ -1,13 +1,13 @@
 import { router } from 'expo-router';
-import { CalendarClock, MapPin } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { Clock, MapPin } from 'lucide-react-native';
 
+import { Box } from '@/components/gluestack/box';
 import { ar } from '@/i18n/ar';
 import type { Booking, BookingStatus } from '@/lib/api';
-import { formatPrice, formatRelativeDay, formatTime } from '@/lib/format';
-import { radius, space, useTheme } from '@/theme';
+import { formatCountdown, formatPrice, formatRelativeDay, formatTime } from '@/lib/format';
+import { radius, useTheme } from '@/theme';
 
-import { Avatar, Badge, Card, ChevronForward, Icon, Row, Skeleton, Text } from './ui';
+import { Avatar, Badge, Card, ChevronForward, Glow, Icon, Row, Skeleton, Text } from './ui';
 
 const STATUS_TONE: Record<BookingStatus, 'primary' | 'success' | 'warning' | 'danger' | 'neutral' | 'info'> = {
   BOOKED: 'primary',
@@ -27,24 +27,23 @@ export const StatusBadge = ({ status }: { status: BookingStatus }) => (
 const open = (id: string) => router.push({ pathname: '/booking/[id]', params: { id } });
 
 export function BookingCard({ booking: b }: { booking: Booking }) {
-  const { colors } = useTheme();
   const tz = b.shop.timezone;
   return (
     <Card
       onPress={() => open(b.id)}
       accessibilityLabel={`${b.service?.name ?? ''} مع ${b.barber.displayName}، ${formatRelativeDay(b.startsAt, tz)} ${formatTime(b.startsAt, tz)}، ${ar.bookings.status[b.status]}`}>
-      <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
-        <View style={[styles.dateTile, { backgroundColor: colors.primarySoft }]}>
+      <Row className="items-start gap-3">
+        <Box className="min-h-16 w-19 items-center justify-center rounded-md bg-primary/10 py-2">
           <Text variant="overline" tone="onPrimarySoft" align="center">
             {formatRelativeDay(b.startsAt, tz).split(' ')[0]}
           </Text>
           <Text variant="bodyStrong" tone="onPrimarySoft" align="center">
             {formatTime(b.startsAt, tz)}
           </Text>
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Row style={{ justifyContent: 'space-between' }}>
-            <Text variant="bodyStrong" numberOfLines={1} style={{ flex: 1 }}>
+        </Box>
+        <Box className="flex-1 gap-0.5">
+          <Row className="justify-between">
+            <Text variant="bodyStrong" numberOfLines={1} className="flex-1">
               {b.service?.name ?? '—'}
             </Text>
             <StatusBadge status={b.status} />
@@ -55,48 +54,65 @@ export function BookingCard({ booking: b }: { booking: Booking }) {
           <Text variant="caption" tone="textSubtle">
             {formatRelativeDay(b.startsAt, tz)} · {formatPrice(b.priceEgp)}
           </Text>
-        </View>
+        </Box>
       </Row>
     </Card>
   );
 }
 
-/** The "your next appointment" hero on Home: ink card, high emphasis. */
+/** The "your next appointment" hero on Home: ink card with a teal glow, the time as the headline. */
 export function NextBookingHero({ booking: b }: { booking: Booking }) {
+  // the glow is an SVG gradient, which needs a concrete color value
+  const { colors } = useTheme();
   const tz = b.shop.timezone;
+  const countdown = formatCountdown(b.startsAt);
   return (
     <Card
       tone="ink"
+      padded={false}
       onPress={() => open(b.id)}
       accessibilityLabel={`${ar.home.nextBooking}: ${b.service?.name ?? ''} مع ${b.barber.displayName}، ${formatRelativeDay(b.startsAt, tz)} ${formatTime(b.startsAt, tz)}`}
-      style={{ padding: space.xl }}>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <Text variant="overline" tone="onInkMuted">
+      className="overflow-hidden rounded-2xl p-5">
+      <Glow color={colors.primaryBright} className="-top-42.5 -end-32.5 h-85 w-85" />
+      <Row className="justify-between">
+        <Text variant="overline" tone="primaryBright">
           {ar.home.nextBooking}
         </Text>
-        <StatusBadge status={b.status} />
-      </Row>
-      <Row gap={space.md} style={{ marginTop: space.md }}>
-        <Avatar name={b.barber.displayName} size={52} />
-        <View style={{ flex: 1 }}>
-          <Text variant="heading" tone="onInk" numberOfLines={1}>
-            {b.service?.name ?? '—'} {ar.book.with} {b.barber.displayName}
-          </Text>
-          <Row gap={space.xs}>
-            <Icon icon={MapPin} size={14} tone="onInkMuted" />
-            <Text variant="caption" tone="onInkMuted" numberOfLines={1}>
-              {b.shop.name}
+        {countdown ? (
+          <Row className="h-7.5 gap-1 rounded-full bg-ink-foreground/12 px-3">
+            <Icon icon={Clock} size={14} tone="onInk" />
+            <Text variant="caption" tone="onInk">
+              {countdown}
             </Text>
           </Row>
-        </View>
-        <Icon icon={ChevronForward} tone="onInkMuted" />
+        ) : (
+          <StatusBadge status={b.status} />
+        )}
       </Row>
-      <View style={styles.heroDivider} />
-      <Row gap={space.sm}>
-        <Icon icon={CalendarClock} size="md" tone="onInk" />
-        <Text variant="bodyStrong" tone="onInk">
-          {formatRelativeDay(b.startsAt, tz)}، {formatTime(b.startsAt, tz)}
-        </Text>
+      <Row className="mt-3 justify-between">
+        <Box className="flex-1">
+          <Text variant="hero" tone="onInk">
+            {formatTime(b.startsAt, tz)}
+          </Text>
+          <Text variant="caption" tone="onInkMuted">
+            {formatRelativeDay(b.startsAt, tz)}
+          </Text>
+        </Box>
+        <Avatar name={b.barber.displayName} size={56} />
+      </Row>
+      <Row className="mt-4 gap-3 rounded-xl border border-ink-foreground/12 bg-ink-foreground/8 p-3 ps-4">
+        <Box className="flex-1">
+          <Text variant="bodyStrong" tone="onInk" numberOfLines={1}>
+            {b.shop.name}
+          </Text>
+          <Text variant="caption" tone="onInkMuted" numberOfLines={1}>
+            {b.barber.displayName} · {b.service?.name ?? '—'}
+          </Text>
+        </Box>
+        <Box className="h-10 w-10 items-center justify-center rounded-full bg-ink-foreground/12">
+          <Icon icon={MapPin} size={18} tone="onInk" />
+        </Box>
+        <Icon icon={ChevronForward} tone="onInkMuted" />
       </Row>
     </Card>
   );
@@ -105,25 +121,13 @@ export function NextBookingHero({ booking: b }: { booking: Booking }) {
 export function BookingCardSkeleton() {
   return (
     <Card>
-      <Row gap={space.md}>
+      <Row className="gap-3">
         <Skeleton width={72} height={64} radius={radius.md} />
-        <View style={{ flex: 1, gap: space.sm }}>
+        <Box className="flex-1 gap-2">
           <Skeleton width="55%" height={18} />
           <Skeleton width="80%" height={14} />
-        </View>
+        </Box>
       </Row>
     </Card>
   );
 }
-
-const styles = StyleSheet.create({
-  dateTile: {
-    width: 76,
-    minHeight: 64,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: space.sm,
-  },
-  heroDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginVertical: space.lg },
-});

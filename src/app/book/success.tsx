@@ -1,24 +1,27 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Check } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+import { withUniwind } from 'uniwind';
+
+import { Box } from '@/components/gluestack/box';
 
 import { SummaryLine } from '@/components/booking-steps';
 import { Button, Card, Icon, Screen, Skeleton, Stack, Text } from '@/components/ui';
 import { useBooking } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import { formatPrice, formatRelativeDay, formatTime } from '@/lib/format';
-import { radius, space, useTheme } from '@/theme';
+import { radius } from '@/theme';
+
+const AView = withUniwind(Animated.View);
 
 export default function BookingSuccess() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { colors } = useTheme();
   const { data: b } = useBooking(id);
 
   return (
     <Screen
       footer={
-        <Stack gap={space.sm}>
+        <Stack className="gap-2">
           <Button
             label={ar.book.viewBooking}
             onPress={() => router.replace({ pathname: '/booking/[id]', params: { id } })}
@@ -26,25 +29,25 @@ export default function BookingSuccess() {
           <Button label={ar.book.backHome} variant="ghost" onPress={() => router.replace('/home')} />
         </Stack>
       }>
-      <Stack gap={space.xxl} style={{ alignItems: 'center', paddingTop: space.huge }}>
-        <Animated.View
+      <Stack className="items-center gap-6 pt-12">
+        <AView
           entering={ZoomIn.springify().damping(14)}
-          style={[styles.check, { backgroundColor: colors.success }]}>
+          className="h-24 w-24 items-center justify-center rounded-full bg-success">
           <Icon icon={Check} size={44} tone="onPrimary" strokeWidth={3} />
-        </Animated.View>
-        <Animated.View entering={FadeInDown.delay(120).duration(320)} style={{ gap: space.sm }}>
+        </AView>
+        <AView entering={FadeInDown.delay(120).duration(320)} className="gap-2">
           <Text variant="display" align="center" accessibilityRole="header">
             {ar.book.successTitle}
           </Text>
           <Text tone="textMuted" align="center">
             {ar.book.successBody}
           </Text>
-        </Animated.View>
+        </AView>
 
-        <Animated.View entering={FadeInDown.delay(200).duration(320)} style={{ alignSelf: 'stretch' }}>
+        <AView entering={FadeInDown.delay(200).duration(320)} className="self-stretch">
           {b ? (
-            <Card style={{ gap: space.md }}>
-              <View style={[styles.code, { backgroundColor: colors.primarySoft }]}>
+            <Card className="gap-3">
+              <Box className="gap-1 rounded-lg bg-secondary py-4">
                 <Text variant="caption" tone="onPrimarySoft" align="center">
                   {ar.book.bookingCode}
                 </Text>
@@ -52,12 +55,12 @@ export default function BookingSuccess() {
                   variant="display"
                   tone="onPrimarySoft"
                   align="center"
-                  style={{ letterSpacing: 6 }}
+                  className="tracking-[6px]"
                   accessibilityLabel={`${ar.book.bookingCode} ${b.code.split('').join(' ')}`}>
                   {b.code}
                 </Text>
-              </View>
-              <View>
+              </Box>
+              <Box>
                 <SummaryLine label={ar.bookings.service} value={b.service?.name ?? '—'} />
                 <SummaryLine label={ar.bookings.barber} value={b.barber.displayName} />
                 <SummaryLine
@@ -65,18 +68,13 @@ export default function BookingSuccess() {
                   value={`${formatRelativeDay(b.startsAt, b.shop.timezone)}، ${formatTime(b.startsAt, b.shop.timezone)}`}
                 />
                 <SummaryLine label={ar.bookings.price} value={formatPrice(b.priceEgp)} />
-              </View>
+              </Box>
             </Card>
           ) : (
             <Skeleton height={260} radius={radius.xl} />
           )}
-        </Animated.View>
+        </AView>
       </Stack>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  check: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' },
-  code: { borderRadius: radius.lg, paddingVertical: space.lg, gap: space.xs },
-});

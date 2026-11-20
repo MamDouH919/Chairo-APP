@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CircleAlert } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import { DayStrip, SlotGrid } from '@/components/booking-steps';
 import { RestrictionNotice } from '@/components/restriction-notice';
@@ -26,7 +26,8 @@ import { api, type Slot } from '@/lib/api';
 import { localDate } from '@/lib/dates';
 import { errorCode, errorMessage } from '@/lib/errors';
 import { formatRelativeDay, formatTime } from '@/lib/format';
-import { radius, space } from '@/theme';
+import { radius } from '@/theme';
+import { Box } from '@/components/gluestack/box';
 
 export default function Reschedule() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -97,9 +98,9 @@ export default function Reschedule() {
       <Screen header={header}>
         <Card tone="muted">
           <Stack>
-            <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
+            <Row className="gap-3 items-start">
               <Icon icon={CircleAlert} tone="warning" />
-              <Text style={{ flex: 1 }}>{ar.bookings.rescheduleTooLate}</Text>
+              <Text className="flex-1">{ar.bookings.rescheduleTooLate}</Text>
             </Row>
             {b.canCancel && (
               <Button
@@ -129,27 +130,24 @@ export default function Reschedule() {
           onPress={() => save.mutate()}
         />
       }>
-      <Stack gap={space.xl}>
+      <Stack className="gap-5">
         <RestrictionNotice />
 
-        <View>
+        <Box>
           <Text variant="caption" tone="textSubtle">
             {ar.bookings.rescheduleCurrent}
           </Text>
           <Text variant="bodyStrong">
             {formatRelativeDay(b.startsAt, tz)}، {formatTime(b.startsAt, tz)} {ar.book.with} {b.barber.displayName}
           </Text>
-        </View>
+        </Box>
 
         {team.length > 1 && (
-          <Stack gap={space.sm}>
+          <Stack className="gap-2">
             <Text variant="heading" accessibilityRole="header">
               {ar.book.chooseBarber}
             </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: space.sm, paddingVertical: space.xs }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 py-1">
               {team.map((x) => (
                 <Chip
                   key={x.id}
@@ -165,7 +163,7 @@ export default function Reschedule() {
           </Stack>
         )}
 
-        <Stack gap={space.sm}>
+        <Stack className="gap-2">
           <Text variant="heading" accessibilityRole="header">
             {ar.book.chooseTime}
           </Text>

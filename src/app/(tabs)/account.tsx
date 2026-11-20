@@ -17,12 +17,11 @@ import {
   Store,
 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Linking, View } from 'react-native';
+import { Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MockBadge } from '@/components/brand';
 import { switchToShopMode } from '@/components/mode-menu';
-import { Avatar, Button, Card, ListRow, Screen, Sheet, Stack, Text, TextField, toast } from '@/components/ui';
+import { Avatar, Button, Card, ListRow, Reveal, Screen, Sheet, Stack, Text, TextField, toast } from '@/components/ui';
 import { useAppConfig } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import { api, type AppConfig } from '@/lib/api';
@@ -30,7 +29,7 @@ import { errorMessage } from '@/lib/errors';
 import { formatPhone, whatsappUrl } from '@/lib/format';
 import { useAuth } from '@/stores/auth';
 import { useHasShops } from '@/stores/mode';
-import { space } from '@/theme';
+import { Box } from '@/components/gluestack/box';
 
 export default function Account() {
   const insets = useSafeAreaInsets();
@@ -43,56 +42,63 @@ export default function Account() {
   const hasSupport = !!(support?.phone || support?.whatsapp || support?.email);
 
   return (
-    <Screen edgeBottom={false} header={<View style={{ height: insets.top }} />}>
-      <Stack gap={space.xxl} style={{ paddingTop: space.lg }}>
+    <Screen edgeBottom={false} header={<Box style={{ height: insets.top }} />} scrollTitle={ar.account.title}>
+      <Stack className="gap-6 pt-4">
         <Text variant="title" accessibilityRole="header">
           {ar.account.title}
         </Text>
 
-        <Card tone="ink" style={{ padding: space.xl }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
-            <Avatar name={user?.name ?? '?'} size={64} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text variant="heading" tone="onInk">
-                {user?.name}
-              </Text>
-              <Text variant="label" tone="onInkMuted" style={{ writingDirection: 'ltr', alignSelf: 'flex-start' }}>
-                {user ? formatPhone(user.phone) : ''}
-              </Text>
-            </View>
-            <MockBadge />
-          </View>
-        </Card>
+        <Reveal index={0}>
+          <Card tone="ink" className="p-5">
+            <Box className="flex-row items-center gap-4">
+              <Avatar name={user?.name ?? '?'} size={64} />
+              <Box className="flex-1 gap-0.5">
+                <Text variant="heading" tone="onInk">
+                  {user?.name}
+                </Text>
+                <Text variant="label" tone="onInkMuted" className="self-start" style={{ writingDirection: 'ltr' }}>
+                  {user ? formatPhone(user.phone) : ''}
+                </Text>
+              </Box>
+            </Box>
+          </Card>
+        </Reveal>
 
-        <Card padded={false} style={{ overflow: 'hidden' }}>
-          <ListRow
-            icon={hasShops ? Store : Scissors}
-            title={hasShops ? ar.staff.shopMode : ar.staff.imBarber}
-            subtitle={hasShops ? ar.staff.shopModeHint : undefined}
-            onPress={() => void switchToShopMode()}
-            last
-          />
-        </Card>
+        <Reveal index={1}>
+          <Card padded={false} className="overflow-hidden">
+            <ListRow
+              icon={hasShops ? Store : Scissors}
+              title={hasShops ? ar.staff.shopMode : ar.staff.imBarber}
+              subtitle={hasShops ? ar.staff.shopModeHint : undefined}
+              onPress={() => void switchToShopMode()}
+              last
+            />
+          </Card>
+        </Reveal>
 
-        <Card padded={false} style={{ overflow: 'hidden' }}>
-          <ListRow icon={PencilLine} title={ar.account.editName} onPress={() => setEditing(true)} />
-          <ListRow icon={ShieldAlert} title={ar.account.record} onPress={() => router.push('/account/strikes')} />
-          <ListRow icon={Smartphone} title={ar.account.sessions} onPress={() => router.push('/account/sessions')} />
-          <ListRow icon={ShieldCheck} title={ar.account.policy} onPress={() => router.push('/policy')} />
-          <ListRow icon={Moon} title={ar.account.appearance} subtitle={ar.account.appearanceHint} />
-          <ListRow icon={Languages} title={ar.account.language} value={ar.account.languageValue} />
-          <ListRow
-            icon={CircleHelp}
-            title={ar.account.help}
-            value={hasSupport ? undefined : ar.account.comingSoon}
-            onPress={hasSupport ? () => setHelpOpen(true) : undefined}
-            last
-          />
-        </Card>
+        <Reveal index={2}>
+          <Card padded={false} className="overflow-hidden">
+            <ListRow icon={PencilLine} title={ar.account.editName} onPress={() => setEditing(true)} />
+            <ListRow icon={ShieldAlert} title={ar.account.record} onPress={() => router.push('/account/strikes')} />
+            <ListRow icon={Smartphone} title={ar.account.sessions} onPress={() => router.push('/account/sessions')} />
+            <ListRow icon={ShieldCheck} title={ar.account.policy} onPress={() => router.push('/policy')} />
+            <ListRow icon={Moon} title={ar.account.appearance} subtitle={ar.account.appearanceHint} />
+            <ListRow icon={Languages} title={ar.account.language} value={ar.account.languageValue} />
+            <ListRow
+              icon={CircleHelp}
+              title={ar.account.help}
+              value={hasSupport ? undefined : ar.account.comingSoon}
+              onPress={hasSupport ? () => setHelpOpen(true) : undefined}
+              last
+            />
+          </Card>
+        </Reveal>
 
-        <Card padded={false} style={{ overflow: 'hidden' }}>
-          <ListRow icon={LogOut} title={ar.account.logout} danger onPress={() => setConfirmLogout(true)} last />
-        </Card>
+        <Reveal index={3}>
+          <Card padded={false} className="overflow-hidden">
+            <ListRow icon={LogOut} title={ar.account.logout} danger onPress={() => setConfirmLogout(true)} last />
+          </Card>
+        </Reveal>
 
         <Text variant="caption" tone="textSubtle" align="center">
           {ar.account.version(Constants.expoConfig?.version ?? '1.0.0')}
@@ -129,12 +135,12 @@ function HelpSheet({
   };
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <Stack gap={space.lg} style={{ alignSelf: 'stretch' }}>
+      <Stack className="gap-4 self-stretch">
         <Text variant="heading" accessibilityRole="header">
           {ar.account.help}
         </Text>
         <Text tone="textMuted">{ar.account.helpHint}</Text>
-        <Stack gap={space.sm}>
+        <Stack className="gap-2">
           {support.whatsapp ? (
             <Button
               label={ar.account.helpWhatsapp}
@@ -183,7 +189,7 @@ function EditNameSheet({ visible, onClose }: { visible: boolean; onClose: () => 
   const valid = name.trim().length >= 2;
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <Stack gap={space.lg} style={{ alignSelf: 'stretch' }}>
+      <Stack className="gap-4 self-stretch">
         <Text variant="heading" accessibilityRole="header">
           {ar.account.editName}
         </Text>
@@ -221,11 +227,11 @@ function ConfirmSheet({
 }) {
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <Stack gap={space.lg} style={{ alignSelf: 'stretch' }}>
+      <Stack className="gap-4 self-stretch">
         <Text variant="heading" align="center">
           {title}
         </Text>
-        <Stack gap={space.sm}>
+        <Stack className="gap-2">
           <Button label={confirmLabel} variant="danger" onPress={onConfirm} />
           <Button label={ar.common.cancel} variant="ghost" onPress={onClose} />
         </Stack>

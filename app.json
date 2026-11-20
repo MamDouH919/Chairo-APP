@@ -19,7 +19,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
+      "predictiveBackGestureEnabled": true,
       "package": "app.chairo"
     },
     "web": {
@@ -56,7 +56,9 @@
         {
           "locationWhenInUsePermission": "Chairo بيستخدم موقعك مرة واحدة عشان يحفظ مكان محلك على الخريطة"
         }
-      ]
+      ],
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

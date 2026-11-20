@@ -1,16 +1,18 @@
-/**
- * Runtime config from EXPO_PUBLIC_* env vars (see .env.example).
- * With no API URL the app runs fully on in-memory mock data, so UI work never waits for the backend.
- */
+/** Runtime config from EXPO_PUBLIC_* env vars (see .env.example). All data comes from the backend. */
 const apiUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
+
+if (!apiUrl) {
+  throw new Error('EXPO_PUBLIC_API_URL is not set. Point it at chairo-api (see .env.example).');
+}
 
 export const env = {
   apiUrl,
-  useMocks: process.env.EXPO_PUBLIC_USE_MOCKS === 'true' || !apiUrl,
-  /** Shops shown on Home until the API has discovery (API Phase 6). Comma-separated slugs. */
-  featuredSlugs: (process.env.EXPO_PUBLIC_FEATURED_SLUGS ?? 'chairo-demo')
+  /** Extra shops pinned on Home on top of the city search. Comma-separated slugs. */
+  featuredSlugs: (process.env.EXPO_PUBLIC_FEATURED_SLUGS ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+  /** City whose shops Home lists (matches the shop's `city` text). */
+  city: process.env.EXPO_PUBLIC_CITY?.trim() || 'بنها',
   timezone: 'Africa/Cairo',
 } as const;

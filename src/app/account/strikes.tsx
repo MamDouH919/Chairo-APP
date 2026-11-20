@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { ShieldAlert, ShieldCheck } from 'lucide-react-native';
 import { useState } from 'react';
-import { View } from 'react-native';
 
 import { NoteSheet } from '@/components/note-sheet';
 import { RestrictionNotice } from '@/components/restriction-notice';
@@ -25,7 +24,8 @@ import { qk, useMyRecord } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import { api, type AppealStatus, type Strike } from '@/lib/api';
 import { formatDayMonth, isPast } from '@/lib/format';
-import { radius, space } from '@/theme';
+import { radius } from '@/theme';
+import { Box } from '@/components/gluestack/box';
 
 const APPEAL_TONE: Record<Exclude<AppealStatus, 'NONE'>, 'info' | 'success' | 'danger'> = {
   PENDING: 'info',
@@ -66,43 +66,47 @@ export default function MyRecordScreen() {
   const { active, history } = q.data;
   return (
     <Screen header={header} refreshing={q.isRefetching} onRefresh={() => q.refetch()}>
-      <Stack gap={space.xxl}>
+      <Stack className="gap-6">
         <RestrictionNotice />
 
         <Card tone={active.length ? 'muted' : 'surface'}>
-          <Row gap={space.md}>
-            <Icon icon={active.length ? ShieldAlert : ShieldCheck} size="xl" tone={active.length ? 'warning' : 'success'} />
-            <View style={{ flex: 1, gap: 2 }}>
+          <Row className="gap-3">
+            <Icon
+              icon={active.length ? ShieldAlert : ShieldCheck}
+              size="xl"
+              tone={active.length ? 'warning' : 'success'}
+            />
+            <Box className="flex-1 gap-0.5">
               <Text variant="heading">{active.length ? ar.record.activeTitle(active.length) : ar.record.clean}</Text>
               {!active.length && (
                 <Text variant="caption" tone="textMuted">
                   {ar.record.cleanHint}
                 </Text>
               )}
-            </View>
+            </Box>
           </Row>
         </Card>
 
         {active.length > 0 && (
-          <View>
+          <Box>
             <SectionHeader title={ar.record.active} />
-            <Stack gap={space.sm}>
+            <Stack className="gap-2">
               {active.map((s) => (
                 <StrikeCard key={s.id} strike={s} onAppeal={() => setAppealing(s.id)} />
               ))}
             </Stack>
-          </View>
+          </Box>
         )}
 
         {history.length > 0 && (
-          <View>
+          <Box>
             <SectionHeader title={ar.record.history} />
-            <Stack gap={space.sm}>
+            <Stack className="gap-2">
               {history.map((s) => (
                 <StrikeCard key={s.id} strike={s} />
               ))}
             </Stack>
-          </View>
+          </Box>
         )}
       </Stack>
 
@@ -128,16 +132,16 @@ function StrikeCard({ strike: s, onAppeal }: { strike: Strike; onAppeal?: () => 
   const bookingId = s.bookingId;
   return (
     <Card>
-      <Stack gap={space.sm}>
+      <Stack className="gap-2">
         <Text variant="bodyStrong">{ar.record.source[s.source]}</Text>
         <Text variant="caption" tone="textSubtle">
           {ar.record.issuedOn(formatDayMonth(s.createdAt))} ·{' '}
           {(isPast(s.expiresAt) ? ar.record.expiredOn : ar.record.expiresOn)(formatDayMonth(s.expiresAt))}
         </Text>
         {s.appealStatus !== 'NONE' && (
-          <View style={{ alignSelf: 'flex-start' }}>
+          <Box className="self-start">
             <Badge label={ar.record.appealStatus[s.appealStatus]} tone={APPEAL_TONE[s.appealStatus]} />
-          </View>
+          </Box>
         )}
         {s.resolutionNote && (
           <Text variant="caption" tone="textMuted">
@@ -145,21 +149,21 @@ function StrikeCard({ strike: s, onAppeal }: { strike: Strike; onAppeal?: () => 
           </Text>
         )}
         {(bookingId || s.canAppeal) && (
-          <Row gap={space.sm}>
+          <Row className="gap-2">
             {s.canAppeal && onAppeal && (
-              <View style={{ flex: 1 }}>
+              <Box className="flex-1">
                 <Button label={ar.record.appeal} variant="secondary" size="md" onPress={onAppeal} />
-              </View>
+              </Box>
             )}
             {bookingId && (
-              <View style={{ flex: 1 }}>
+              <Box className="flex-1">
                 <Button
                   label={ar.record.viewBooking}
                   variant="outline"
                   size="md"
                   onPress={() => router.push({ pathname: '/booking/[id]', params: { id: bookingId } })}
                 />
-              </View>
+              </Box>
             )}
           </Row>
         )}

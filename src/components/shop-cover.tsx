@@ -1,24 +1,26 @@
-import { Image } from 'expo-image';
+import { Image as ExpoImage } from 'expo-image';
 import { Scissors } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { withUniwind } from 'uniwind';
 
-import { useTheme } from '@/theme';
+import { Box } from '@/components/gluestack/box';
 
 import { Icon, Text } from './ui';
 
-const TINTS = ['#0F766E', '#B45309', '#1E3A8A', '#6D28D9', '#9F1239', '#0E7490', '#4D7C0F'];
+const Image = withUniwind(ExpoImage);
+
+const TINTS = ['bg-avatar-1', 'bg-avatar-2', 'bg-avatar-3', 'bg-avatar-4', 'bg-avatar-5', 'bg-avatar-6'];
 
 /** djb2 — spreads similar names across tints (a plain char-code sum collides often). */
 const hash = (s: string) => [...s].reduce((h, c) => ((h << 5) + h + c.charCodeAt(0)) >>> 0, 5381);
 
 /** Shop photo, or a branded placeholder (ink + tint + monogram) when the shop has none. */
 export function ShopCover({ name, url, height }: { name: string; url: string | null; height: number }) {
-  const { colors } = useTheme();
   if (url) {
     return (
       <Image
         source={url}
-        style={{ width: '100%', height, backgroundColor: colors.surfaceMuted }}
+        className="w-full bg-muted"
+        style={{ height }}
         contentFit="cover"
         transition={200}
         accessible={false}
@@ -28,40 +30,20 @@ export function ShopCover({ name, url, height }: { name: string; url: string | n
   const tint = TINTS[hash(name) % TINTS.length];
   const monogram = name.trim().charAt(0).toUpperCase();
   return (
-    <View style={[styles.box, { height, backgroundColor: colors.surfaceInk }]} accessible={false}>
-      <View style={[styles.blob, { backgroundColor: tint }]} />
-      <View style={[styles.blob2, { backgroundColor: tint }]} />
-      <View style={styles.pattern}>
-        <Icon
-          icon={Scissors}
-          size={height * 0.9}
-          tone="onInk"
-          strokeWidth={0.6}
-          style={{ opacity: 0.07, transform: [{ rotate: '-24deg' }] }}
-        />
-      </View>
+    <Box className="w-full items-center justify-center overflow-hidden bg-ink" style={{ height }} accessible={false}>
+      <Box className={`${tint} absolute -top-30 -end-15 h-65 w-65 rounded-full opacity-55`} />
+      <Box className={`${tint} absolute -bottom-27.5 -start-10 h-45 w-45 rounded-full opacity-30`} />
+      <Box className="absolute inset-0 items-start justify-center ps-6">
+        <Icon icon={Scissors} size={height * 0.9} tone="onInk" strokeWidth={0.6} className="-rotate-24 opacity-7" />
+      </Box>
+      {/* the monogram scales with the cover height */}
       <Text
         variant="display"
         tone="onInk"
-        style={{ fontSize: height * 0.32, lineHeight: height * 0.42, opacity: 0.92 }}>
+        className="opacity-90"
+        style={{ fontSize: height * 0.32, lineHeight: height * 0.42 }}>
         {monogram}
       </Text>
-    </View>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  box: { width: '100%', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  blob: { position: 'absolute', width: 260, height: 260, borderRadius: 130, top: -120, end: -60, opacity: 0.55 },
-  blob2: { position: 'absolute', width: 180, height: 180, borderRadius: 90, bottom: -110, start: -40, opacity: 0.3 },
-  pattern: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    start: 0,
-    end: 0,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    paddingStart: 24,
-  },
-});

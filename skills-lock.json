@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "gluestack-ui-v5": {
+      "source": "gluestack/agent-skills",
+      "commit": "12ba10a0df78a65934d15fb217d9c89df949f826",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/gluestack-ui-v5/SKILL.md",
+      "computedHash": "70e15d32919cd3aa1742271c9289e59a6d1a005d4eb9539ba262998fbf1f0834"
+    }
+  }
+}

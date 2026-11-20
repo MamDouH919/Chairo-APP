@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Smartphone } from 'lucide-react-native';
 import { useState } from 'react';
-import { View } from 'react-native';
 
 import {
   Badge,
@@ -24,7 +23,8 @@ import { api, type Session } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { timeAgo } from '@/lib/format';
 import { useAuth } from '@/stores/auth';
-import { radius, space } from '@/theme';
+import { radius } from '@/theme';
+import { Box } from '@/components/gluestack/box';
 
 export default function Sessions() {
   const qc = useQueryClient();
@@ -68,9 +68,9 @@ export default function Sessions() {
       refreshing={q.isRefetching}
       onRefresh={() => q.refetch()}
       footer={<Button label={ar.sessions.logoutAll} variant="danger" onPress={() => setAskLogoutAll(true)} />}>
-      <Stack gap={space.lg}>
+      <Stack className="gap-4">
         <Text tone="textMuted">{ar.sessions.hint}</Text>
-        <Stack gap={space.sm}>
+        <Stack className="gap-2">
           {q.data.map((s) => (
             <SessionCard
               key={s.id}
@@ -86,7 +86,7 @@ export default function Sessions() {
         <Text variant="heading" align="center" accessibilityRole="header">
           {ar.sessions.logoutAllConfirm}
         </Text>
-        <Stack gap={space.sm} style={{ alignSelf: 'stretch', marginTop: space.sm }}>
+        <Stack className="gap-2 self-stretch mt-2">
           <Button
             label={ar.sessions.logoutAll}
             variant="danger"
@@ -111,17 +111,17 @@ function SessionCard({
 }) {
   return (
     <Card>
-      <Stack gap={space.md}>
-        <Row gap={space.md}>
+      <Stack className="gap-3">
+        <Row className="gap-3">
           <Icon icon={Smartphone} tone="textMuted" />
-          <View style={{ flex: 1, gap: 2 }}>
+          <Box className="flex-1 gap-0.5">
             <Text variant="bodyStrong" numberOfLines={1}>
               {s.userAgent ?? ar.sessions.unknownDevice}
             </Text>
             <Text variant="caption" tone="textSubtle">
               {ar.sessions.lastUsed(timeAgo(s.lastUsedAt))}
             </Text>
-          </View>
+          </Box>
           {s.isCurrent && <Badge label={ar.sessions.thisDevice} tone="success" />}
         </Row>
         {!s.isCurrent && (

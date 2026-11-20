@@ -1,33 +1,44 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { Award, Clock, MapPin, Navigation, Phone, Scissors, Star } from 'lucide-react-native';
-import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { Linking, Platform } from 'react-native';
+import Animated, { Extrapolation, interpolate, useAnimatedStyle, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Box } from '@/components/gluestack/box';
+import { Pressable } from '@/components/gluestack/pressable';
+
+import { minPrice } from '@/components/shop-card';
 import { ShopCover } from '@/components/shop-cover';
 import {
   Avatar,
+  Backdrop,
   Badge,
   Button,
   Card,
   ChevronBack,
   ErrorState,
+  Glass,
   Icon,
   IconButton,
+  Reveal,
   Row,
   Screen,
   SectionHeader,
   Skeleton,
   Stack,
   Text,
+  useScrollY,
 } from '@/components/ui';
 import { useShop } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import type { PublicShop } from '@/lib/api';
 import { formatDuration, formatPrice, formatRating } from '@/lib/format';
 import { isOpenNow, todayWeekday } from '@/lib/hours';
-import { radius, space, useTheme } from '@/theme';
+import { radius } from '@/theme';
 
-const COVER_H = 240;
+const COVER_H = 300;
+const SHEET_OVERLAP = 32;
 
 export default function ShopScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -38,33 +49,31 @@ export default function ShopScreen() {
     router.push({ pathname: '/book/[slug]', params: { slug, ...params } });
 
   const back = (
-    <View style={[styles.backBtn, { top: insets.top + space.sm }]}>
+    <Box className="absolute start-4" style={{ top: insets.top + 8 }}>
       <IconButton
         icon={ChevronBack}
         label={ar.common.back}
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))}
       />
-    </View>
+    </Box>
   );
 
   if (shop.isPending) {
     return (
-      <Screen header={<View />} padded={false}>
+      <Screen header={<Box />} padded={false} headerDivider={false} overlay={back}>
         <Skeleton height={COVER_H} radius={0} />
-        <Stack style={{ padding: space.xl }}>
+        <Stack className="p-5">
           <Skeleton width="70%" height={28} />
           <Skeleton width="45%" height={16} />
           <Skeleton height={120} radius={radius.xl} />
         </Stack>
-        {back}
       </Screen>
     );
   }
   if (shop.isError) {
     return (
-      <Screen header={<View style={{ height: insets.top + 64 }} />}>
+      <Screen header={<Box style={{ height: insets.top + 64 }} />} headerDivider={false} overlay={back}>
         <ErrorState error={shop.error} onRetry={() => shop.refetch()} />
-        {back}
       </Screen>
     );
   }
@@ -72,29 +81,63 @@ export default function ShopScreen() {
   const s = shop.data;
   return (
     <Screen
-      header={<View />}
+      header={<Box />}
       padded={false}
-      footer={<Button label={ar.shop.book} icon={Scissors} onPress={() => book()} />}>
-      <ShopCover name={s.name} url={s.coverUrl} height={COVER_H} />
-      <View style={styles.body}>
-        <Header shop={s} />
-        <Services shop={s} onPick={(serviceId) => book({ serviceId })} />
-        <Team shop={s} onPick={(barberId) => book({ barberId })} />
-        <Hours shop={s} />
-        {s.description && (
-          <View>
-            <SectionHeader title={ar.shop.about} />
-            <Text tone="textMuted">{s.description}</Text>
-          </View>
-        )}
-      </View>
-      {back}
+      headerDivider={false}
+      overlay={back}
+      // the shop name moves up into a compact bar once the cover has scrolled away
+      scrollTitle={s.name}
+      scrollTitleAt={COVER_H - SHEET_OVERLAP - insets.top - 56}
+      footer={<BookBar shop={s} onBook={() => book()} />}>
+      <ParallaxCover>
+        <ShopCover name={s.name} url={s.coverUrl} height={COVER_H} />
+      </ParallaxCover>
+      <Box className="-mt-8 overflow-hidden rounded-t-3xl">
+        <Backdrop />
+        <Box className="w-full max-w-160 gap-6 self-center px-5 pt-6">
+          <Reveal>
+            <Header shop={s} />
+          </Reveal>
+          <Reveal index={1}>
+            <Services shop={s} onPick={(serviceId) => book({ serviceId })} />
+          </Reveal>
+          <Reveal index={2}>
+            <Team shop={s} onPick={(barberId) => book({ barberId })} />
+          </Reveal>
+          <Reveal index={3}>
+            <Hours shop={s} />
+          </Reveal>
+          {s.description && (
+            <Reveal index={4}>
+              <SectionHeader title={ar.shop.about} />
+              <Text tone="textMuted">{s.description}</Text>
+            </Reveal>
+          )}
+        </Box>
+      </Box>
     </Screen>
   );
 }
 
+/**
+ * The cover moves at half the scroll speed, so the content sheet appears to slide over it, and it
+ * stretches from the top edge when the page is pulled down. With "Reduce Motion" on it scrolls normally.
+ */
+function ParallaxCover({ children }: { children: ReactNode }) {
+  const scrollY = useScrollY();
+  const reduceMotion = useReducedMotion();
+  const style = useAnimatedStyle(() => {
+    if (reduceMotion) return {};
+    const y = scrollY.value;
+    // pulled down (y < 0): pin to the top and grow by the overscroll distance
+    const scale = interpolate(y, [-COVER_H, 0], [2, 1], Extrapolation.CLAMP);
+    const translateY = y < 0 ? y / 2 : interpolate(y, [0, COVER_H], [0, COVER_H / 2], Extrapolation.CLAMP);
+    return { transform: [{ translateY }, { scale }] };
+  });
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
 function Header({ shop: s }: { shop: PublicShop }) {
-  const { colors } = useTheme();
   const open = isOpenNow(s.hours, s.timezone);
   const place = [s.address, s.area, s.city].filter(Boolean).join('، ');
   const mapsUrl =
@@ -106,61 +149,89 @@ function Header({ shop: s }: { shop: PublicShop }) {
       : null;
 
   return (
-    <Card style={{ marginTop: -56, gap: space.md }}>
-      <Row style={{ flexWrap: 'wrap' }}>
+    <Box className="gap-3">
+      <Row className="flex-wrap">
         <Badge label={open ? ar.shop.openNow : ar.shop.closedNow} tone={open ? 'success' : 'neutral'} icon={Clock} />
         {s.isFoundingPartner && <Badge label={ar.home.foundingPartner} tone="accent" icon={Award} />}
       </Row>
-      <Text variant="title" accessibilityRole="header">
-        {s.name}
-      </Text>
-      <Row gap={space.xs}>
-        <Icon icon={Star} size={18} tone="accent" fill={colors.accent} />
-        <Text variant="bodyStrong">{formatRating(s.ratingAvg)}</Text>
-        <Text variant="caption" tone="textSubtle">
-          · {ar.home.reviews(s.ratingCount)}
-        </Text>
-      </Row>
-      {place ? (
-        <Row gap={space.xs} style={{ alignItems: 'flex-start' }}>
-          <Icon icon={MapPin} size={18} tone="textSubtle" />
-          <Text variant="caption" tone="textMuted" style={{ flex: 1 }}>
-            {place}
+      <Row className="items-start gap-3">
+        <Box className="flex-1 gap-0.5">
+          <Text variant="title" accessibilityRole="header">
+            {s.name}
           </Text>
-        </Row>
-      ) : null}
-      <Row gap={space.sm}>
+          {place ? (
+            <Row className="items-start gap-1">
+              <Icon icon={MapPin} size={16} tone="textSubtle" className="mt-0.5" />
+              <Text variant="caption" tone="textMuted" className="flex-1">
+                {place}
+              </Text>
+            </Row>
+          ) : null}
+        </Box>
+        <Glass
+          className="items-center rounded-lg px-3 py-2"
+          accessibilityLabel={`تقييم ${formatRating(s.ratingAvg)}، ${ar.home.reviews(s.ratingCount)}`}>
+          <Row className="gap-1">
+            <Icon icon={Star} size={16} tone="accent" className="fill-accent-foreground" />
+            <Text variant="bodyStrong">{formatRating(s.ratingAvg)}</Text>
+          </Row>
+          <Text variant="overline" tone="textSubtle">
+            {ar.home.reviews(s.ratingCount)}
+          </Text>
+        </Glass>
+      </Row>
+      <Row className="gap-2">
         {s.phone && (
-          <View style={{ flex: 1 }}>
+          <Box className="flex-1">
             <Button
               label={ar.shop.call}
               icon={Phone}
-              variant="outline"
+              variant="glass"
               size="md"
               onPress={() => Linking.openURL(`tel:${s.phone}`)}
             />
-          </View>
+          </Box>
         )}
         {mapsUrl && (
-          <View style={{ flex: 1 }}>
+          <Box className="flex-1">
             <Button
               label={ar.shop.directions}
               icon={Navigation}
-              variant="outline"
+              variant="glass"
               size="md"
               onPress={() => Linking.openURL(mapsUrl)}
             />
-          </View>
+          </Box>
         )}
       </Row>
-    </Card>
+    </Box>
+  );
+}
+
+/** Floating footer: the starting price next to the main CTA. */
+function BookBar({ shop, onBook }: { shop: PublicShop; onBook: () => void }) {
+  const from = minPrice(shop);
+  return (
+    <Row className="gap-3">
+      {from != null && (
+        <Box className="flex-1 ps-2">
+          <Text variant="caption" tone="textMuted">
+            {ar.shop.from}
+          </Text>
+          <Text variant="heading">{formatPrice(from)}</Text>
+        </Box>
+      )}
+      {/* the CTA is wider than the price block; a fractional flex can't be a static class */}
+      <Box style={{ flex: from != null ? 1.4 : 1 }}>
+        <Button label={ar.shop.book} icon={Scissors} onPress={onBook} />
+      </Box>
+    </Row>
   );
 }
 
 function Services({ shop, onPick }: { shop: PublicShop; onPick: (id: string) => void }) {
-  const { colors } = useTheme();
   return (
-    <View>
+    <Box>
       <SectionHeader title={ar.shop.services} />
       <Card padded={false}>
         {shop.services.map((svc, i) => (
@@ -169,83 +240,76 @@ function Services({ shop, onPick }: { shop: PublicShop; onPick: (id: string) => 
             accessibilityRole="button"
             accessibilityLabel={`${svc.name}، ${formatDuration(svc.durationMin)}، ${formatPrice(svc.priceEgp)}`}
             onPress={() => onPick(svc.id)}
-            style={({ pressed }) => [
-              styles.serviceRow,
-              i < shop.services.length - 1 && {
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: colors.border,
-              },
-              pressed && { backgroundColor: colors.surfaceMuted },
-            ]}>
-            <View style={{ flex: 1 }}>
+            className={`min-h-16 flex-row items-center gap-3 px-4 py-3 data-[active=true]:bg-glass-pressed ${
+              i < shop.services.length - 1 ? 'border-b border-border' : ''
+            }`}>
+            <Box className="flex-1">
               <Text variant="bodyStrong">{svc.name}</Text>
               <Text variant="caption" tone="textSubtle">
                 {formatDuration(svc.durationMin)}
               </Text>
-            </View>
+            </Box>
             <Text variant="bodyStrong" tone="primary">
               {formatPrice(svc.priceEgp)}
             </Text>
           </Pressable>
         ))}
       </Card>
-    </View>
+    </Box>
   );
 }
 
 function Team({ shop, onPick }: { shop: PublicShop; onPick: (id: string) => void }) {
-  const { colors } = useTheme();
   return (
-    <View>
+    <Box>
       <SectionHeader title={ar.shop.team} />
-      <Stack gap={space.sm}>
+      <Stack className="gap-2">
         {shop.barbers.map((b) => (
           <Card
             key={b.id}
             onPress={b.acceptsBookings ? () => onPick(b.id) : undefined}
             accessibilityLabel={`${b.displayName}، تقييم ${formatRating(b.ratingAvg)}`}
-            style={{ paddingVertical: space.md }}>
-            <Row gap={space.md}>
+            className="py-3">
+            <Row className="gap-3">
               <Avatar name={b.displayName} />
-              <View style={{ flex: 1 }}>
+              <Box className="flex-1">
                 <Text variant="bodyStrong">{b.displayName}</Text>
                 <Text variant="caption" tone="textSubtle" numberOfLines={1}>
                   {b.acceptsBookings ? (b.bio ?? '') : ar.shop.notAccepting}
                 </Text>
-              </View>
-              <Row gap={4}>
-                <Icon icon={Star} size={14} tone="accent" fill={colors.accent} />
+              </Box>
+              <Row className="gap-1">
+                <Icon icon={Star} size={14} tone="accent" className="fill-accent-foreground" />
                 <Text variant="label">{formatRating(b.ratingAvg)}</Text>
               </Row>
             </Row>
           </Card>
         ))}
       </Stack>
-    </View>
+    </Box>
   );
 }
 
 function Hours({ shop }: { shop: PublicShop }) {
-  const { colors } = useTheme();
   const today = todayWeekday(shop.timezone);
   // Start the week on Saturday, as is common in Egypt
   const order = [6, 0, 1, 2, 3, 4, 5];
   return (
-    <View>
+    <Box>
       <SectionHeader title={ar.shop.hours} />
-      <Card style={{ gap: space.xs }}>
+      <Card className="gap-1">
         {order.map((wd) => {
           const h = shop.hours.find((x) => x.weekday === wd);
           const isToday = wd === today;
           return (
             <Row
               key={wd}
-              style={[styles.hoursRow, isToday && { backgroundColor: colors.primarySoft }]}
+              className={`rounded-md px-3 py-2 ${isToday ? 'bg-primary/10' : ''}`}
               accessibilityLabel={`${ar.shop.weekdays[wd]}: ${!h || h.isClosed ? ar.shop.closed : `${h.open} - ${h.close}`}`}>
               <Text
                 variant={isToday ? 'bodyStrong' : 'body'}
                 tone={isToday ? 'onPrimarySoft' : 'text'}
-                style={{ flex: 1 }}>
+                className="flex-1">
                 {ar.shop.weekdays[wd]}
               </Text>
               <Text
@@ -258,20 +322,6 @@ function Hours({ shop }: { shop: PublicShop }) {
           );
         })}
       </Card>
-    </View>
+    </Box>
   );
 }
-
-const styles = StyleSheet.create({
-  body: { paddingHorizontal: space.xl, gap: space.xxl, width: '100%', maxWidth: 640, alignSelf: 'center' },
-  backBtn: { position: 'absolute', start: space.lg },
-  serviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    minHeight: 64,
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-  },
-  hoursRow: { paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.md },
-});

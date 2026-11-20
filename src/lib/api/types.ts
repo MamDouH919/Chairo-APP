@@ -290,3 +290,58 @@ export interface CreatedShop {
   slug: string;
   status: ShopStatus;
 }
+
+// ── shop management (owner / barber) ───────────────────────────────────────
+
+/** GET /shops/:id/services. The owner's menu, inactive rows included. */
+export interface ManagedService {
+  id: string;
+  name: string;
+  nameEn: string | null;
+  durationMin: number;
+  priceEgp: number;
+  isActive: boolean;
+}
+
+export interface ServiceInput {
+  name: string;
+  nameEn?: string | null;
+  durationMin: number;
+  priceEgp: number;
+}
+
+/** One day of PUT /shops/:id/hours. `open`/`close` are "HH:mm"; close before open means after midnight. */
+export interface ShopHoursInput {
+  weekday: number;
+  open?: string;
+  close?: string;
+  isClosed: boolean;
+}
+
+/** A barber's shift. Several per day are fine (split shifts) as long as they don't overlap. */
+export interface WorkingShift {
+  weekday: number;
+  start: string;
+  end: string;
+}
+
+export interface ManagedBarber {
+  id: string;
+  displayName: string;
+  isActive: boolean;
+  /** has this chair's owner logged in yet */
+  userId: string | null;
+}
+
+export interface WorkingHoursResult {
+  workingHours: WorkingShift[];
+  /** shifts outside the shop's opening hours: saved anyway, reported so the barber can fix them */
+  warnings: unknown[];
+  bookingsOutsideHours: unknown[];
+}
+
+export interface AddBarberInput {
+  displayName: string;
+  /** E.164. When given, the barber gets an account link and an invite to log in. */
+  phone?: string | null;
+}

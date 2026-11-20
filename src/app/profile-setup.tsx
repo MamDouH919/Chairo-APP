@@ -6,7 +6,6 @@ import { ar } from '@/i18n/ar';
 import { api } from '@/lib/api';
 import { errorMessage } from '@/lib/errors';
 import { useAuth } from '@/stores/auth';
-import { space } from '@/theme';
 
 /** Shown once after the first OTP login (isNewUser or no name yet). */
 export default function ProfileSetup() {
@@ -26,8 +25,8 @@ export default function ProfileSetup() {
 
   return (
     <Screen keyboard footer={<Button label={ar.auth.finish} onPress={submit} loading={save.isPending} />}>
-      <Stack gap={space.xxl} style={{ paddingTop: space.huge }}>
-        <Stack gap={space.xs}>
+      <Stack className="gap-6 pt-12">
+        <Stack className="gap-1">
           <Text variant="title" accessibilityRole="header">
             {ar.auth.nameTitle}
           </Text>

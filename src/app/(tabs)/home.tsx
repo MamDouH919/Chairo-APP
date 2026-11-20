@@ -1,25 +1,22 @@
 import { router } from 'expo-router';
 import { Bell, Search, Store } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Platform, StyleSheet, TextInput, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MockBadge } from '@/components/brand';
+import { Box } from '@/components/gluestack/box';
+import { Input, InputField, InputIcon, InputSlot } from '@/components/gluestack/input';
 import { AvatarMenuButton } from '@/components/mode-menu';
 import { BookingActionCard } from '@/components/booking-action-card';
 import { NextBookingHero } from '@/components/booking-card';
 import { RestrictionNotice } from '@/components/restriction-notice';
 import { ShopCard, ShopCardSkeleton } from '@/components/shop-card';
-import { EmptyState, ErrorState, Icon, IconButton, Row, Screen, SectionHeader, Stack, Text } from '@/components/ui';
+import { EmptyState, ErrorState, IconButton, Reveal, Row, Screen, SectionHeader, Stack, Text } from '@/components/ui';
 import { useFeaturedShops, useMyBookings, useUnreadCount } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import { useAuth } from '@/stores/auth';
 import { useHasShops } from '@/stores/mode';
-import { fonts, hitTarget, radius, space, useTheme } from '@/theme';
 
 export default function Home() {
-  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const user = useAuth((s) => s.user);
   const shops = useFeaturedShops();
@@ -27,7 +24,6 @@ export default function Home() {
   const unread = useUnreadCount().data ?? 0;
   const hasShops = useHasShops();
   const [q, setQ] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
 
   const next = upcoming.data?.[0];
   const filtered = useMemo(() => {
@@ -41,22 +37,22 @@ export default function Home() {
   return (
     <Screen
       edgeBottom={false}
-      header={<View style={{ height: insets.top }} />}
+      header={<Box style={{ height: insets.top }} />}
+      scrollTitle={ar.tabs.home}
       refreshing={shops.isRefetching || upcoming.isRefetching}
       onRefresh={() => {
         void shops.refetch();
         void upcoming.refetch();
       }}>
-      <Stack gap={space.xxl} style={{ paddingTop: space.lg }}>
+      <Stack className="gap-6 pt-4">
         {/* greeting */}
-        <Row style={{ justifyContent: 'space-between' }}>
-          <View style={{ flex: 1, gap: 2 }}>
+        <Row className="justify-between">
+          <Box className="flex-1 gap-0.5">
             <Row>
               <Text variant="title">{ar.home.greeting(user?.name)}</Text>
-              <MockBadge />
             </Row>
             <Text tone="textMuted">{ar.home.subtitle}</Text>
-          </View>
+          </Box>
           <IconButton
             icon={Bell}
             label={ar.tabs.notifications}
@@ -67,38 +63,32 @@ export default function Home() {
         </Row>
 
         {/* search (filters the featured list until the API has search — API Phase 6) */}
-        <View
-          style={[
-            styles.search,
-            { backgroundColor: colors.surface, borderColor: searchFocused ? colors.primary : colors.border },
-          ]}>
-          <Icon icon={Search} tone="textSubtle" />
-          <TextInput
+        <Input className="h-13.5 rounded-full border shadow-sm">
+          <InputSlot className="ps-4">
+            <InputIcon as={Search} className="text-subtle-foreground" />
+          </InputSlot>
+          <InputField
             value={q}
             onChangeText={setQ}
             placeholder={ar.home.searchPlaceholder}
-            placeholderTextColor={colors.textSubtle}
             accessibilityLabel={ar.home.searchPlaceholder}
             returnKeyType="search"
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            style={[styles.searchInput, { color: colors.text }]}
           />
-        </View>
+        </Input>
 
         {!q && <RestrictionNotice linkToRecord />}
 
         {next && !q && (
-          <Animated.View entering={FadeInDown.duration(300)} style={{ gap: space.md }}>
+          <Reveal style={{ gap: 12 }}>
             <NextBookingHero booking={next} />
             <BookingActionCard booking={next} />
-          </Animated.View>
+          </Reveal>
         )}
 
-        <View>
+        <Box>
           <SectionHeader title={ar.home.featured} hint={ar.home.featuredHint} />
           {shops.isPending ? (
-            <Stack gap={space.lg}>
+            <Stack className="gap-4">
               <ShopCardSkeleton />
               <ShopCardSkeleton />
             </Stack>
@@ -107,35 +97,16 @@ export default function Home() {
           ) : filtered.length === 0 ? (
             <EmptyState icon={Store} title={q ? ar.home.noResults : ar.home.noShops} />
           ) : (
-            <Stack gap={space.lg}>
+            <Stack className="gap-4">
               {filtered.map((shop, i) => (
-                <Animated.View key={shop.id} entering={FadeInDown.duration(320).delay(Math.min(i, 5) * 60)}>
+                <Reveal key={shop.id} index={i}>
                   <ShopCard shop={shop} />
-                </Animated.View>
+                </Reveal>
               ))}
             </Stack>
           )}
-        </View>
+        </Box>
       </Stack>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    minHeight: 52,
-    paddingHorizontal: space.lg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-  },
-  searchInput: {
-    flex: 1,
-    minHeight: hitTarget,
-    fontFamily: fonts.regular,
-    fontSize: 16,
-    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
-  },
-});

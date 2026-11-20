@@ -1,16 +1,15 @@
 import { router } from 'expo-router';
 import { CircleAlert, QrCode, UserCheck, type LucideIcon } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
 
 import { useBookingAction, useCheckedIn } from '@/hooks/queries';
 import { ar } from '@/i18n/ar';
 import { api, type Booking } from '@/lib/api';
 import { nextAction } from '@/lib/booking-actions';
 import { errorMessage } from '@/lib/errors';
-import { space } from '@/theme';
 
 import { Button, Card, Icon, Row, Stack, Text, toast } from './ui';
+import { Box } from '@/components/gluestack/box';
 
 const openBooking = (id: string, cancel?: boolean) =>
   router.push({ pathname: '/booking/[id]', params: { id, ...(cancel ? { cancel: '1' } : null) } });
@@ -30,15 +29,15 @@ function ActionShell({
 }) {
   return (
     <Card>
-      <Stack gap={space.md}>
-        <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
+      <Stack className="gap-3">
+        <Row className="gap-3 items-start">
           <Icon icon={icon} tone={tone} />
-          <View style={{ flex: 1, gap: 2 }}>
+          <Box className="flex-1 gap-0.5">
             <Text variant="bodyStrong">{title}</Text>
             <Text variant="caption" tone="textMuted">
               {hint}
             </Text>
-          </View>
+          </Box>
         </Row>
         {children}
       </Stack>
@@ -52,26 +51,26 @@ export function RunningLateCard({ booking: b, onCancel }: { booking: Booking; on
   return (
     <ActionShell icon={CircleAlert} tone="warning" title={ar.actions.lateTitle} hint={ar.bookings.delay(b.delayMin)}>
       {(b.canReschedule || b.canCancel) && (
-        <Row gap={space.sm}>
+        <Row className="gap-2">
           {b.canReschedule && (
-            <View style={{ flex: 1 }}>
+            <Box className="flex-1">
               <Button
                 label={ar.bookings.reschedule}
                 variant="secondary"
                 size="md"
                 onPress={() => router.push({ pathname: '/reschedule/[id]', params: { id: b.id } })}
               />
-            </View>
+            </Box>
           )}
           {b.canCancel && (
-            <View style={{ flex: 1 }}>
+            <Box className="flex-1">
               <Button
                 label={ar.bookings.cancelBooking}
                 variant="danger"
                 size="md"
                 onPress={onCancel ?? (() => openBooking(b.id, true))}
               />
-            </View>
+            </Box>
           )}
         </Row>
       )}

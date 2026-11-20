@@ -1,13 +1,15 @@
 import * as Haptics from 'expo-haptics';
 import type { LucideIcon } from 'lucide-react-native';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Platform, type ViewStyle } from 'react-native';
 
-import { type Colors, hitTarget, radius, space, useTheme } from '@/theme';
+import { Box } from '@/components/gluestack/box';
+import { Button as GButton, ButtonIcon, ButtonSpinner, ButtonText } from '@/components/gluestack/button';
 
+import { Glass } from './glass';
 import { Icon } from './icon';
-import { Text } from './text';
+import { PressableScale } from './motion';
 
-type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'ink';
+type Variant = 'primary' | 'secondary' | 'outline' | 'glass' | 'ghost' | 'danger' | 'ink';
 
 interface ButtonProps {
   label: string;
@@ -22,22 +24,8 @@ interface ButtonProps {
   haptic?: boolean;
   accessibilityHint?: string;
   style?: ViewStyle;
+  className?: string;
 }
-
-const palette = (c: Colors, v: Variant) =>
-  ({
-    primary: { bg: c.primary, bgPressed: c.primaryPressed, fg: 'onPrimary', border: c.primary },
-    secondary: { bg: c.primarySoft, bgPressed: c.surfaceMuted, fg: 'onPrimarySoft', border: c.primarySoft },
-    outline: { bg: c.surface, bgPressed: c.surfaceMuted, fg: 'text', border: c.borderStrong },
-    ghost: { bg: 'transparent', bgPressed: c.surfaceMuted, fg: 'primary', border: 'transparent' },
-    danger: { bg: c.dangerSoft, bgPressed: c.surfaceMuted, fg: 'danger', border: c.dangerSoft },
-    ink: { bg: c.surfaceInk, bgPressed: c.text, fg: 'onInk', border: c.surfaceInk },
-  })[v] as {
-    bg: string;
-    bgPressed: string;
-    fg: 'onPrimary' | 'onPrimarySoft' | 'text' | 'primary' | 'danger' | 'onInk';
-    border: string;
-  };
 
 export function Button({
   label,
@@ -52,45 +40,36 @@ export function Button({
   haptic = variant === 'primary',
   accessibilityHint,
   style,
+  className = '',
 }: ButtonProps) {
-  const { colors } = useTheme();
-  const p = palette(colors, variant);
   const inactive = disabled || loading;
-
   return (
-    <Pressable
+    <GButton
+      variant={variant}
+      size={size}
+      isDisabled={!!inactive}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
-      disabled={inactive}
       onPress={() => {
         if (haptic && Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onPress?.();
       }}
-      style={({ pressed }) => [
-        styles.base,
-        {
-          minHeight: size === 'lg' ? 56 : hitTarget,
-          paddingHorizontal: size === 'lg' ? space.xxl : space.lg,
-          backgroundColor: pressed ? p.bgPressed : p.bg,
-          borderColor: p.border,
-          opacity: disabled ? 0.45 : 1,
-          alignSelf: fullWidth ? 'stretch' : 'flex-start',
-        },
-        style,
-      ]}>
+      style={style}
+      // footers sit on a solid page color, so a faded button keeps its identity without bleed-through
+      className={`${fullWidth ? 'self-stretch' : 'self-start'} ${iconPosition === 'end' ? 'flex-row-reverse' : ''} ${
+        variant === 'primary' && !disabled ? 'shadow-lg shadow-primary/35' : ''
+      } ${className}`}>
       {loading ? (
-        <ActivityIndicator color={colors[p.fg]} />
+        <ButtonSpinner />
       ) : (
-        <View style={[styles.row, iconPosition === 'end' && styles.rowReverse]}>
-          {icon && <Icon icon={icon} tone={p.fg} size="md" />}
-          <Text variant={size === 'lg' ? 'bodyStrong' : 'label'} tone={p.fg} numberOfLines={1}>
-            {label}
-          </Text>
-        </View>
+        <>
+          {icon && <ButtonIcon as={icon} />}
+          <ButtonText numberOfLines={1}>{label}</ButtonText>
+        </>
       )}
-    </Pressable>
+    </GButton>
   );
 }
 
@@ -98,43 +77,38 @@ interface IconButtonProps {
   icon: LucideIcon;
   label: string; // required: icon-only controls need an accessible name
   onPress?: () => void;
-  variant?: 'surface' | 'ghost' | 'ink';
+  /** surface/glass: frosted circle (native Liquid Glass on iOS 26); ghost: bare icon; ink: on dark heroes */
+  variant?: 'surface' | 'glass' | 'ghost' | 'ink';
   badge?: boolean;
 }
 
 export function IconButton({ icon, label, onPress, variant = 'surface', badge }: IconButtonProps) {
-  const { colors } = useTheme();
-  const bg = { surface: colors.surface, ghost: 'transparent', ink: 'rgba(255,255,255,0.12)' }[variant];
+  const frosted = variant === 'surface' || variant === 'glass';
+  const dot = badge && (
+    <Box className="absolute end-3 top-2.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-destructive" />
+  );
+  const glyph = <Icon icon={icon} tone={variant === 'ink' ? 'onInk' : 'text'} size="md" />;
+  const circle = 'h-12 w-12 items-center justify-center rounded-full';
+
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={4}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.iconBtn,
-        {
-          backgroundColor: pressed ? colors.surfaceMuted : bg,
-          borderColor: variant === 'surface' ? colors.border : 'transparent',
-        },
-      ]}>
-      <Icon icon={icon} tone={variant === 'ink' ? 'onInk' : 'text'} size="md" />
-      {badge && <View style={[styles.dot, { backgroundColor: colors.danger, borderColor: colors.surface }]} />}
-    </Pressable>
+      scaleTo={0.9}
+      dim={0.8}>
+      {frosted ? (
+        <Glass layer="chrome" interactive className={circle}>
+          {glyph}
+          {dot}
+        </Glass>
+      ) : (
+        <Box className={`${circle} ${variant === 'ink' ? 'bg-ink-foreground/10' : ''}`}>
+          {glyph}
+          {dot}
+        </Box>
+      )}
+    </PressableScale>
   );
 }
-
-const styles = StyleSheet.create({
-  base: { borderRadius: radius.lg, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  rowReverse: { flexDirection: 'row-reverse' },
-  iconBtn: {
-    width: hitTarget - 4,
-    height: hitTarget - 4,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  dot: { position: 'absolute', top: 9, end: 10, width: 10, height: 10, borderRadius: 5, borderWidth: 2 },
-});
